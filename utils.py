@@ -271,3 +271,19 @@ def make_fig_fit_base(df):
   covid_fig = go.Figure(data=data, layout=layout)
 
   return covid_fig
+
+def make_fig_map_base(df):
+  fig = px.choropleth(df, locations="countryterritoryCode",
+                    color="cumulative_cases_pct_change",
+                    hover_name="countriesAndTerritories",
+                    animation_frame=df.dateRep.astype(str),
+                    range_color=(0, 8),
+                    color_continuous_scale="OrRd")
+  fig.update_geos(projection_type="kavrayskiy7")
+  fig.update_layout(margin={"r":0,"t":20,"l":0,"b":0}, coloraxis_colorbar=dict(title=""),
+          height=500,
+          width=800,)
+  fig.layout.sliders[0]['active'] = len(fig.frames) - 1
+  fig.update_traces(z=fig.frames[-1].data[0].z, hovertemplate=fig.frames[-1].data[0].hovertemplate)
+
+  return fig 

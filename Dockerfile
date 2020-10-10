@@ -8,7 +8,6 @@ RUN /opt/conda/bin/conda install nomkl -y
 
 # Install desired packages
 RUN /opt/conda/bin/conda install -y scipy dash Flask gunicorn numpy pandas plotly Werkzeug flask-caching
-#RUN /opt/conda/bin/pip install pytrends
 
 # Cleanup conda files
 RUN /opt/conda/bin/conda clean -a -y

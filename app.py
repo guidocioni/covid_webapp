@@ -1,10 +1,9 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
 from dash.dependencies import Input, Output
-import plotly.graph_objs as go
 import plotly.express as px
-import numpy as np
 from flask_caching import Cache
 
 from utils import *
@@ -212,6 +211,53 @@ def serve_layout():
                   )],
                   style={'display': 'inline-block', 'padding': 10})
           ]),
+        dcc.Tab(label='Maps', className='custom-tab', selected_className='custom-tab--selected',
+          children=[
+            dcc.Graph(
+                      figure=make_fig_map_world(),
+                      style={'width': '800'}
+                  )
+          ]),
+        dcc.Tab(label='Tables (daily data)', className='custom-tab', selected_className='custom-tab--selected',
+          children=[
+              dash_table.DataTable(
+                  id='table',
+                  columns=make_table()['columns'],
+                  data=make_table()['data'],
+                  virtualization=True,
+                  style_cell={'textAlign': 'left', 'minWidth': '180px', 'width': '180px', 'maxWidth': '180px'},
+                  fixed_rows={'headers': True},
+                  style_table={'height': 600},
+                  filter_action="native",
+                  sort_action="native",
+                  sort_mode="multi",
+                  style_data_conditional=[
+                          {
+                              'if': {
+                                  'filter_query': '{{{}}} >= {}'.format(col, value),
+                                  'column_id': col
+                              },
+                              'backgroundColor': 'tomato',
+                              'color': 'white'
+                          } for (col, value) in make_table()['df'].quantile(0.9).iteritems()
+                      ] + [
+                          {
+                              'if': {
+                                  'filter_query': '{{{}}} >= {}'.format(col, value),
+                                  'column_id': col
+                              },
+                              'backgroundColor': '#FF4136',
+                              'color': 'white'
+                          } for (col, value) in make_table()['df'].quantile(0.95).iteritems()
+                      ] ,
+                  style_header={
+                      'backgroundColor': 'rgb(230, 230, 230)',
+                      'fontWeight': 'bold',
+                      'whiteSpace': 'normal',
+                      'height': 'auto',
+                  }
+)
+          ])
   ]),
       html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
   ], style={'width': '100%', 'display': 'inline-block'})
@@ -219,6 +265,33 @@ def serve_layout():
 
 app.layout = serve_layout
 
+def make_table():
+  df = filter_data(start_date='2020-03-15', threshold=1000)
+  df = df.loc[df.dateRep == df.dateRep.max()].drop(columns=['dateRep', 'day','month','year','geoId','popData2019', 'countryterritoryCode'])\
+          .round(3).sort_values(by="Cumulative_number_for_14_days_of_COVID-19_cases_per_100000", ascending=False)
+
+  columns = [
+     {'name': 'Continent', 'id': 'continentExp', 'hideable': True, 'type':'text'},
+     {'name': 'Country', 'id': 'countriesAndTerritories', 'hideable': True, 'type':'text'},
+     {'name': 'Daily Cases', 'id': 'cases', 'hideable': True, 'type':'numeric'},
+     {'name': 'Daily Deaths', 'id': 'deaths', 'hideable': True, 'type':'numeric'},
+     {'name': '14-days cumulative per 100k', 'id': 'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative cases', 'id': 'cumulative_cases', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative deaths', 'id': 'cumulative_deaths', 'hideable': True, 'type':'numeric'},
+     {'name': 'Pct. change of cumulative cases', 'id': 'cumulative_cases_pct_change', 'hideable': True, 'type':'numeric'},
+     {'name': 'Pct. change of cumulative deaths','id': 'cumulative_deaths_pct_change', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative cases density per 100k inhabitants', 'id': 'cumulative_cases_density', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative deaths density per 100k inhabitants', 'id': 'cumulative_deaths_density', 'hideable': True, 'type':'numeric'}]
+  
+  data=df.to_dict('records')
+
+  return {'columns':columns, 'data':data, 'df':df}
+
+
+def make_fig_map_world():
+  df = filter_data(start_date='2020-03-15', threshold=1000)
+
+  return make_fig_map_base(df)
 
 @app.callback(
     Output('figure-fit-1', 'figure'),
@@ -227,7 +300,6 @@ def make_fig_fit(country):
   df = filter_data(country=[country], start_date='2020-01-15')
 
   return make_fig_fit_base(df)
-
 
 @app.callback(
     Output('figure-fit-2', 'figure'),
