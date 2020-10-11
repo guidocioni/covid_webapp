@@ -5,6 +5,8 @@ import dash_table
 from dash.dependencies import Input, Output
 import plotly.express as px
 from flask_caching import Cache
+import requests
+from bs4 import BeautifulSoup
 
 from utils import *
 
@@ -83,6 +85,20 @@ def read_ecdc():
 
   return df
 
+@cache.memoize(timeout=TIMEOUT)
+def read_weekly_ecdc():
+  '''Reader from ECDC which should be a reliable source for many data. 
+  '''
+  r = requests.get('https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
+  soup = BeautifulSoup(r.text)
+  file_url = soup.findAll('a',
+        string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19")[0]['href']
+
+  df = pd.read_excel(file_url)
+
+  # Only return last week otherwise it takes too long to make the picture
+  return df[df.year_week == df.year_week.max()]
+
 
 def filter_data(country=None, start_date=None, threshold=None):
   '''- Specify country if you want data for a single country.
@@ -131,6 +147,7 @@ def serve_layout():
   return html.Div(children=[
       html.Div(html.H1('COVID-19 Monitoring')),
       html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
+      html.Div('Last Update: %s' % str(filter_data().dateRep.max())),
       #
       dcc.Tabs(parent_className='custom-tabs', className='custom-tabs-container', 
         children=[
@@ -213,10 +230,16 @@ def serve_layout():
           ]),
         dcc.Tab(label='Maps', className='custom-tab', selected_className='custom-tab--selected',
           children=[
+            html.Div(
             dcc.Graph(
                       figure=make_fig_map_world(),
                       style={'width': '800'}
-                  )
+            ), style={'display': 'inline-block', 'padding': 10}),
+            html.Div(
+            dcc.Graph(
+                      figure=make_fig_map_weekly_europe(),
+                      style={'width': '800'}
+                  ),  style={'display': 'inline-block', 'padding': 10}),
           ]),
         dcc.Tab(label='Tables (daily data)', className='custom-tab', selected_className='custom-tab--selected',
           children=[
@@ -289,9 +312,14 @@ def make_table():
 
 
 def make_fig_map_world():
-  df = filter_data(start_date='2020-03-15', threshold=1000)
+  df = filter_data(start_date='2020-05-01', threshold=1000)
 
   return make_fig_map_base(df)
+
+def make_fig_map_weekly_europe():
+  df = read_weekly_ecdc()
+
+  return make_fig_map_weekly(df)
 
 @app.callback(
     Output('figure-fit-1', 'figure'),

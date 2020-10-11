@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
 import plotly.graph_objs as go
 import plotly.express as px
+import json
 
 def compute_r0(group, window=5):
     # Compute R0 using RKI method 
@@ -278,12 +279,32 @@ def make_fig_map_base(df):
                     hover_name="countriesAndTerritories",
                     animation_frame=df.dateRep.astype(str),
                     range_color=(0, 8),
-                    color_continuous_scale="OrRd")
+                    color_continuous_scale="OrRd", title='Pct. change of cases w.r.t. to previous day')
   fig.update_geos(projection_type="kavrayskiy7")
-  fig.update_layout(margin={"r":0,"t":20,"l":0,"b":0}, coloraxis_colorbar=dict(title=""),
+  fig.update_layout( coloraxis_colorbar=dict(title=""),
           height=500,
-          width=800,)
+          width=800, margin={"r":0,"t":50,"l":0,"b":0})
+  fig['layout']['updatemenus'][0]['pad']=dict(r= 10, t= 0)
+  fig['layout']['sliders'][0]['pad']=dict(r= 10, t= 0,)
   fig.layout.sliders[0]['active'] = len(fig.frames) - 1
   fig.update_traces(z=fig.frames[-1].data[0].z, hovertemplate=fig.frames[-1].data[0].hovertemplate)
 
-  return fig 
+  return fig
+
+def make_fig_map_weekly(df):
+  with open('NUTS_RG_10M_2021_4326.geojson') as file:
+    geojson = json.load(file)
+
+  fig = px.choropleth_mapbox(df, geojson=geojson, 
+                       locations='nuts_code', color='rate_14_day_per_100k',
+                       mapbox_style="carto-positron",
+                       zoom=2.5, center = {"lat": 51.4816, "lon": 3.1791},
+                       opacity=0.5, title='14-days reporting ratio per 100k',
+                       color_continuous_scale="OrRd",)
+
+  fig.update_geos(showcountries=False, showcoastlines=True, 
+                  showland=False, fitbounds="locations")
+  fig.update_layout(margin={"r":0,"t":50,"l":0,"b":0})
+
+  return fig
+

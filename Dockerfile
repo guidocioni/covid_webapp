@@ -7,7 +7,7 @@ RUN /opt/conda/bin/conda update conda -y
 RUN /opt/conda/bin/conda install nomkl -y
 
 # Install desired packages
-RUN /opt/conda/bin/conda install -y scipy dash Flask gunicorn numpy pandas plotly Werkzeug flask-caching
+RUN /opt/conda/bin/conda install -y scipy dash Flask gunicorn numpy pandas plotly Werkzeug flask-caching beautifulsoup4 xlrd
 
 # Cleanup conda files
 RUN /opt/conda/bin/conda clean -a -y
@@ -19,4 +19,4 @@ ENV PATH /opt/conda/bin:$PATH
 ADD ./ /opt/webapp/
 WORKDIR /opt/webapp
 
-CMD /opt/conda/bin/gunicorn app:server
+CMD /opt/conda/bin/gunicorn --timeout 90 app:server
