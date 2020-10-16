@@ -42,7 +42,7 @@ app = dash.Dash(__name__,
                 ],
                 suppress_callback_exceptions=True)
 server = app.server
-app.title = 'COVID-19 live forecast'
+app.title = 'COVID-19 dashboard'
 
 cache = Cache(server, config={
     'CACHE_TYPE': 'filesystem',
@@ -67,15 +67,10 @@ def read_ecdc():
 
   df = df.sort_index()
 
-  df = pd.merge(left=df.reset_index(),
-                right=df.groupby("countriesAndTerritories").apply(
-                    compute_cumulative).reset_index(),
-                on=['countriesAndTerritories', 'dateRep'])
-
-  df = pd.merge(left=df,
-                right=df.set_index('dateRep').groupby("countriesAndTerritories").apply(
-                    compute_percentage).reset_index(),
-                on=['countriesAndTerritories', 'dateRep'])
+  df['cumulative_cases'] = df.groupby(by=['countriesAndTerritories'])['cases'].cumsum()
+  df['cumulative_deaths']=  df.groupby(by=['countriesAndTerritories'])['deaths'].cumsum()
+  df['cumulative_cases_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_cases'].pct_change().rolling(7).mean()*100.
+  df['cumulative_deaths_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_deaths'].pct_change().rolling(7).mean()*100.
   # Compute case density
 
   df['cumulative_cases_density'] = (
@@ -83,14 +78,14 @@ def read_ecdc():
   df['cumulative_deaths_density'] = (
       df['cumulative_deaths'] / df['popData2019']) * 1e5
 
-  return df
+  return df.reset_index()
 
 @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
   '''Reader from ECDC which should be a reliable source for many data. 
   '''
   r = requests.get('https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
-  soup = BeautifulSoup(r.text)
+  soup = BeautifulSoup(r.text, features="lxml")
   file_url = soup.findAll('a',
         string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19")[0]['href']
 

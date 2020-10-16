@@ -164,27 +164,6 @@ def get_countries():
 
   return list(df.countriesAndTerritories.unique())
 
-
-def compute_cumulative(df):
-  df = df[['cases', 'deaths'
-           ]].sort_index().cumsum().rename(columns={
-               'cases': 'cumulative_cases',
-               'deaths': 'cumulative_deaths'
-           })
-
-  return df
-
-
-def compute_percentage(df):
-  df = (df[['cumulative_cases',
-            'cumulative_deaths']].sort_index().pct_change() * 100).rolling(10).mean().rename(columns={
-                'cumulative_cases': 'cumulative_cases_pct_change',
-                'cumulative_deaths': 'cumulative_deaths_pct_change'
-            })
-
-  return df
-
-
 def figure_layout(title, country, xmax, ymax, xmin, ymin, day_last_string,
                   day_peak_string, shift_day_string, speed, saturation_value):
   '''Set the figure layout'''

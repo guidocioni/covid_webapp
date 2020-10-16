@@ -11,3 +11,4 @@ requests
 scipy
 Werkzeug
 xlrd
+lxml
