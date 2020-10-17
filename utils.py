@@ -299,3 +299,57 @@ def make_fig_map_weekly(df):
     height=500, width=800,)
 
   return fig
+
+def make_fig_testing_base(df, variable):
+  fig = px.line(df.sort_values(by='year_week'),
+            x="year_week",
+            y=variable,
+            color="country",
+            hover_name="country",
+            line_shape="spline",
+            render_mode="svg",
+            color_discrete_sequence=px.colors.qualitative.Pastel)
+
+  fig.update_layout(
+  template='plotly_white',
+  legend_orientation="h",
+  width=800,
+  height=500,
+  xaxis=dict(title=''),
+  yaxis=dict(title=''),
+  margin=dict(b=0, t=30, l=10),
+  legend=dict(
+      title=dict(text=''),
+      font=dict(
+          size=10,
+      )
+  )
+  )
+
+  return fig
+
+def make_fig_hospitalization_base(df):
+  fig = px.bar(df,
+            x="date",
+            y="value",
+            color="indicator",
+            hover_name="country",
+            color_discrete_sequence=px.colors.qualitative.Pastel)
+
+  fig.update_layout(
+  template='plotly_white',
+  legend_orientation="h",
+  width=800,
+  height=500,
+  xaxis=dict(title=''),
+  yaxis=dict(title=''),
+  margin=dict(b=0, t=30, l=10),
+  legend=dict(
+      title=dict(text=''),
+      font=dict(
+          size=10,
+      )
+  )
+  )
+
+  return fig

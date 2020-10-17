@@ -7,6 +7,8 @@ import plotly.express as px
 from flask_caching import Cache
 import requests
 from bs4 import BeautifulSoup
+import re
+from datetime import datetime
 
 from utils import *
 
@@ -89,12 +91,45 @@ def read_weekly_ecdc():
   r = requests.get('https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
   soup = BeautifulSoup(r.text, features="lxml")
   file_url = soup.findAll('a',
-        string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19")[0]['href']
+    string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19",
+                       href=re.compile(".xls"))[0]['href']
 
   df = pd.read_excel(file_url)
 
   # Only return last week otherwise it takes too long to make the picture
   return df[df.year_week == df.year_week.max()]
+
+@cache.memoize(timeout=TIMEOUT)
+def read_weekly_ecdc_testing():
+  '''Reader from ECDC which should be a reliable source for many data. 
+  '''
+  r = requests.get('https://www.ecdc.europa.eu/en/publications-data/covid-19-testing')
+  soup = BeautifulSoup(r.text, features="lxml")
+  file_url = soup.findAll('a',
+      string="Download data on testing for COVID-19 by week and country",
+      href=re.compile(".xls"))[0]['href']
+
+  df = pd.read_excel(file_url)
+
+  return df
+
+@cache.memoize(timeout=TIMEOUT)
+def read_hospitalization():
+  '''Reader from ECDC which should be a reliable source for many data. 
+  '''
+  r = requests.get('https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19')
+  soup = BeautifulSoup(r.text, features="lxml")
+  file_url = soup.findAll('a',
+      string="Download data on hospital and ICU admission rates and current occupancy for COVID-19",
+      href=re.compile("xls"))[0]['href']
+
+  def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
+
+  df = pd.read_excel(file_url, parse_dates=[3], date_parser=dateparse).drop(columns=['source', 'url'])
+  # fill the date with monday
+  df.loc[df.indicator.str.contains('Weekly'), 'date'] = df.loc[df.indicator.str.contains('Weekly'), 'year_week']
+
+  return df
 
 
 def filter_data(country=None, start_date=None, threshold=None):
@@ -149,8 +184,18 @@ def serve_layout():
     {"label":'Cumulative cases density per 100k', "value":'cumulative_cases_density'},
     {"label":'Cumulative deaths density per 100k', "value":'cumulative_deaths_density'}
   ]
+  variable_options_2 = [
+    {"label":'Tests done', "value":'tests_done'},
+    {"label":'Testing rate', "value":'testing_rate'},
+    {"label":'Positivity rate', "value":'positivity_rate'}
+  ]
   for cnt in countries_list:
     dropdown_options.append({"label": cnt, "value": cnt})
+
+  dropdown_options_2 = []
+  countries_list_2 = list(read_hospitalization().country.unique())
+  for cnt in countries_list_2:
+    dropdown_options_2.append({"label": cnt, "value": cnt})
 
   return html.Div(children=[
       html.Div(html.H1('COVID-19 Monitoring')),
@@ -200,6 +245,33 @@ def serve_layout():
                   ), style={'display': 'inline-block', 'padding': 10}),
 
           ]),
+          dcc.Tab(label='Testing & Hospitalization', className='custom-tab', selected_className='custom-tab--selected', 
+            children=[
+            html.Div(
+                  [
+                  dcc.Dropdown(
+                      id='variable-dropdown-2',
+                      options=variable_options_2,
+                      value='positivity_rate',
+                      multi=False, style={'width': '800px'}),
+                  dcc.Graph(
+                      id='figure-testing',
+                      style={'width': '800'}
+                  )
+                  ], style={'display': 'inline-block', 'padding': 10}),
+            html.Div(
+              [
+              dcc.Dropdown(
+                      id='country-dropdown-3',
+                      options=dropdown_options_2,
+                      value='France',
+                      multi=False, style={'width': '800px'}),
+              dcc.Graph(
+                      id='figure-hospitalization',
+                      style={'width': '800'}
+                  )
+              ], style={'display': 'inline-block', 'padding': 10})
+            ]),
           dcc.Tab(label='Logistic fit', className='custom-tab', selected_className='custom-tab--selected', 
             children=[
               html.Div('The Blue points show the daily cumulated cases, the red line shows the logistic fit with uncertainty (shaded area), while the\
@@ -331,6 +403,21 @@ def make_fig_map_weekly_europe():
 
   return make_fig_map_weekly(df)
 
+@app.callback(
+    Output('figure-hospitalization', 'figure'),
+    [Input('country-dropdown-3', 'value')])
+def make_fig_hospitalization(country):
+  df = read_hospitalization()
+
+  return make_fig_hospitalization_base(df[df.country==country])
+
+@app.callback(
+    Output('figure-testing', 'figure'),
+    [Input('variable-dropdown-2', 'value')])
+def make_fig_testing(variable):
+  df = read_weekly_ecdc_testing()
+
+  return make_fig_testing_base(df, variable)
 
 @app.callback(
     Output('figure-map-world', 'figure'),
