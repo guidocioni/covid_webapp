@@ -126,9 +126,9 @@ def read_hospitalization():
   def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
 
   df = pd.read_excel(file_url, parse_dates=[3], date_parser=dateparse).drop(columns=['source', 'url'])
+  df['date'] = pd.to_datetime(df['date'])
   # fill the date with monday
   df.loc[df.indicator.str.contains('Weekly'), 'date'] = df.loc[df.indicator.str.contains('Weekly'), 'year_week']
-
   return df
 
 
@@ -218,6 +218,11 @@ def serve_layout():
                              'United_States_of_America'],
                       multi=True, style={'width': '800px'})),
               html.Div(id='intermediate-value', style={'display': 'none'}),
+              html.Div(
+                  dcc.Graph(
+                      id='figure-cases',
+                      style={'width': '800'}
+                  ), style={'display': 'inline-block', 'padding': 10}),
               html.Div(
                   dcc.Graph(
                       id='figure-cumulative',
@@ -547,6 +552,46 @@ def make_fig_cumulative_3(df):
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
+                color_discrete_sequence=px.colors.qualitative.Pastel)
+
+  fig.update_layout(
+    template='plotly_white',
+      margin=dict(b=0, t=30, l=10),
+      legend_orientation="h",
+      width=800,
+      height=500,
+      title=title,
+      xaxis=dict(title=''),
+      yaxis=dict(title=''),
+      legend=dict(
+          title=dict(text=''),
+          font=dict(
+              size=10,
+          )
+      )
+  )
+
+  return fig
+
+@app.callback(
+    Output('figure-cases', 'figure'),
+    [Input('intermediate-value', 'children')])
+def make_fig_cases(df):
+  '''Give as input a threshold for the cumulative cases in the most updated
+  timestep to filter out countries that do not have many cases.'''
+  df = pd.read_json(df, orient='split')
+  df['cases'] = df.groupby("countriesAndTerritories")['cases'].rolling(7).mean().reset_index(0,drop=True)
+
+  variable = "cases"
+  title = '7-day smoothed Daily cases evolution'
+
+  fig = px.line(df,
+                x="dateRep",
+                y=variable,
+                color="countriesAndTerritories",
+                hover_name="countriesAndTerritories",
+                line_shape="spline",
+                render_mode="svg",
                 color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
