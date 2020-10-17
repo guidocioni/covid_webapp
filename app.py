@@ -67,15 +67,12 @@ def read_ecdc():
 
   df = df.sort_index()
 
-  df = pd.merge(left=df.reset_index(),
-                right=df.groupby("countriesAndTerritories").apply(
-                    compute_cumulative).reset_index(),
-                on=['countriesAndTerritories', 'dateRep'])
+  df['cumulative_cases'] = df.groupby(by=['countriesAndTerritories'])['cases'].cumsum()
+  df['cumulative_deaths']=  df.groupby(by=['countriesAndTerritories'])['deaths'].cumsum()
 
-  df = pd.merge(left=df,
-                right=df.set_index('dateRep').groupby("countriesAndTerritories").apply(
-                    compute_percentage).reset_index(),
-                on=['countriesAndTerritories', 'dateRep'])
+  df['cumulative_cases_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_cases'].pct_change().rolling(7).mean()*100.
+  df['cumulative_deaths_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_deaths'].pct_change().rolling(7).mean()*100.
+
   # Compute case density
 
   df['cumulative_cases_density'] = (
@@ -83,14 +80,14 @@ def read_ecdc():
   df['cumulative_deaths_density'] = (
       df['cumulative_deaths'] / df['popData2019']) * 1e5
 
-  return df
+  return df.reset_index()
 
 @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
   '''Reader from ECDC which should be a reliable source for many data. 
   '''
   r = requests.get('https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
-  soup = BeautifulSoup(r.text)
+  soup = BeautifulSoup(r.text, features="lxml")
   file_url = soup.findAll('a',
         string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19")[0]['href']
 
@@ -141,6 +138,17 @@ def filter_data_for_countries(country):
 def serve_layout():
   dropdown_options = []
   countries_list = list(filter_data().countriesAndTerritories.unique())
+  variable_options = [
+    {"label":'Daily cases', "value":'cases'},
+    {"label":'Daily deaths', "value":'deaths'},
+    {"label":'14 days reporting ratio per 100k', "value":'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000'},
+    {"label":'Cumulative cases', "value":'cumulative_cases'},
+    {"label":'Cumulative deaths', "value":'cumulative_deaths'},
+    {"label":'Cumulative cases pct. change', "value":'cumulative_cases_pct_change'},
+    {"label":'Cumulative deaths pct. change', "value":'cumulative_deaths_pct_change'},
+    {"label":'Cumulative cases density per 100k', "value":'cumulative_cases_density'},
+    {"label":'Cumulative deaths density per 100k', "value":'cumulative_deaths_density'}
+  ]
   for cnt in countries_list:
     dropdown_options.append({"label": cnt, "value": cnt})
 
@@ -153,7 +161,7 @@ def serve_layout():
         children=[
           dcc.Tab(label='Aggregated data', className='custom-tab', selected_className='custom-tab--selected',
             children=[
-              html.Div('In the following plots we instead show data from different countries on the same graph. Click on the legend items to show/hide countries or select the countries from the following dropdown.'),
+              html.Div('Click on the legend items to show/hide countries and/or select the countries from the dropdown.'),
               html.Div(
                   'Only countries with more than %s cases at the latest update are included in the search.' % threshold_chosen),
               html.Br(),
@@ -163,7 +171,7 @@ def serve_layout():
                       options=dropdown_options,
                       value=['Germany', 'Italy', 'France',
                              'United_States_of_America'],
-                      multi=True, style={'width': '800px', 'border': '0.5px solid gray'})),
+                      multi=True, style={'width': '800px'})),
               html.Div(id='intermediate-value', style={'display': 'none'}),
               html.Div(
                   dcc.Graph(
@@ -231,26 +239,34 @@ def serve_layout():
         dcc.Tab(label='Maps', className='custom-tab', selected_className='custom-tab--selected',
           children=[
             html.Div(
-            dcc.Graph(
-                      figure=make_fig_map_world(),
+                  [dcc.Dropdown(
+                      id='variable-dropdown',
+                      options=variable_options,
+                      value='cumulative_cases_pct_change'),
+                   dcc.Graph(
+                      id='figure-map-world',
                       style={'width': '800'}
-            ), style={'display': 'inline-block', 'padding': 10}),
+                  )],
+                  style={'display': 'inline-block', 'padding': 10}),
             html.Div(
-            dcc.Graph(
+                  dcc.Graph(
                       figure=make_fig_map_weekly_europe(),
                       style={'width': '800'}
-                  ),  style={'display': 'inline-block', 'padding': 10}),
+                  ),
+                  style={'display': 'inline-block', 'padding-bottom': 50}),
           ]),
         dcc.Tab(label='Tables (daily data)', className='custom-tab', selected_className='custom-tab--selected',
           children=[
-              dash_table.DataTable(
+          html.Div('The table shows only the data from the last update. Red shading indicate values exceeding 90th. and 95th. percentiles'),
+              html.Div(
+                dash_table.DataTable(
                   id='table',
                   columns=make_table()['columns'],
                   data=make_table()['data'],
                   virtualization=True,
                   style_cell={'textAlign': 'left', 'minWidth': '180px', 'width': '180px', 'maxWidth': '180px'},
                   fixed_rows={'headers': True},
-                  style_table={'height': 600},
+                  style_table={'height': 800},
                   filter_action="native",
                   sort_action="native",
                   sort_mode="multi",
@@ -279,7 +295,7 @@ def serve_layout():
                       'whiteSpace': 'normal',
                       'height': 'auto',
                   }
-)
+))
           ])
   ]),
       html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
@@ -291,7 +307,7 @@ app.layout = serve_layout
 def make_table():
   df = filter_data(start_date='2020-03-15', threshold=1000)
   df = df.loc[df.dateRep == df.dateRep.max()].drop(columns=['dateRep', 'day','month','year','geoId','popData2019', 'countryterritoryCode'])\
-          .round(3).sort_values(by="Cumulative_number_for_14_days_of_COVID-19_cases_per_100000", ascending=False)
+          .round(3).sort_values(by="cumulative_cases_pct_change", ascending=False)
 
   columns = [
      {'name': 'Continent', 'id': 'continentExp', 'hideable': True, 'type':'text'},
@@ -305,27 +321,30 @@ def make_table():
      {'name': 'Pct. change of cumulative deaths','id': 'cumulative_deaths_pct_change', 'hideable': True, 'type':'numeric'},
      {'name': 'Cumulative cases density per 100k inhabitants', 'id': 'cumulative_cases_density', 'hideable': True, 'type':'numeric'},
      {'name': 'Cumulative deaths density per 100k inhabitants', 'id': 'cumulative_deaths_density', 'hideable': True, 'type':'numeric'}]
-  
+
   data=df.to_dict('records')
 
   return {'columns':columns, 'data':data, 'df':df}
-
-
-def make_fig_map_world():
-  df = filter_data(start_date='2020-05-01', threshold=1000)
-
-  return make_fig_map_base(df)
 
 def make_fig_map_weekly_europe():
   df = read_weekly_ecdc()
 
   return make_fig_map_weekly(df)
 
+
+@app.callback(
+    Output('figure-map-world', 'figure'),
+    [Input('variable-dropdown', 'value')])
+def make_fig_map_world(variable):
+  df = filter_data(start_date='2020-06-01', threshold=1000)
+
+  return make_fig_map_base(df, variable)
+
 @app.callback(
     Output('figure-fit-1', 'figure'),
     [Input('country-dropdown-1', 'value')])
 def make_fig_fit(country):
-  df = filter_data(country=[country], start_date='2020-01-15')
+  df = filter_data(country=[country], start_date='2020-05-01')
 
   return make_fig_fit_base(df)
 
@@ -333,7 +352,7 @@ def make_fig_fit(country):
     Output('figure-fit-2', 'figure'),
     [Input('country-dropdown-2', 'value')])
 def make_fig_fit(country):
-  df = filter_data(country=[country], start_date='2020-01-15')
+  df = filter_data(country=[country], start_date='2020-05-01')
 
   return make_fig_fit_base(df)
 
@@ -341,13 +360,13 @@ def make_fig_fit(country):
 @app.callback(
     Output('figure-cumulative', 'figure'),
     [Input('intermediate-value', 'children')])
-def make_fig_cumulative(df):
+def make_fig_cumulative_1(df):
   '''Give as input a threshold for the cumulative cases in the most updated
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
   variable = "cumulative_cases"
   log_y = True
-  title = 'Confirmed cases evolution (log. scale)'
+  title = 'Confirmed cases evolution (log. scale, cumulative sum)'
 
   fig = px.line(df,
                 x="dateRep",
@@ -357,14 +376,16 @@ def make_fig_cumulative(df):
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Alphabet)
+                color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
+    template='plotly_white',
       legend_orientation="h",
       width=800,
       height=500,
       title=title,
       xaxis=dict(title=''),
+      yaxis=dict(title=''),
       margin=dict(b=0, t=30, l=10),
       legend=dict(
           title=dict(text=''),
@@ -380,14 +401,14 @@ def make_fig_cumulative(df):
 @app.callback(
     Output('figure-cumulative-2', 'figure'),
     [Input('intermediate-value', 'children')])
-def make_fig_cumulative(df):
+def make_fig_cumulative_2(df):
   '''Give as input a threshold for the cumulative cases in the most updated
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
 
   variable = "cumulative_cases_density"
   log_y = False
-  title = 'Density of cases per 100,000 inhabitants'
+  title = 'Density of cases (cumulative sum) per 100,000 inhabitants'
 
   fig = px.line(df,
                 x="dateRep",
@@ -397,15 +418,17 @@ def make_fig_cumulative(df):
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Alphabet)
+                color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
+    template='plotly_white',
       legend_orientation="h",
       margin=dict(b=0, t=30, l=10),
       width=800,
       height=500,
       title=title,
       xaxis=dict(title=''),
+      yaxis=dict(title=''),
       legend=dict(
           title=dict(text=''),
           font=dict(
@@ -420,14 +443,14 @@ def make_fig_cumulative(df):
 @app.callback(
     Output('figure-cumulative-3', 'figure'),
     [Input('intermediate-value', 'children')])
-def make_fig_cumulative(df):
+def make_fig_cumulative_3(df):
   '''Give as input a threshold for the cumulative cases in the most updated
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
 
   variable = "cumulative_deaths"
   log_y = True
-  title = 'Countries deaths evolution (log. scale)'
+  title = 'Confirmed deaths evolution (log. scale, cumulative sum)'
 
   fig = px.line(df,
                 x="dateRep",
@@ -437,15 +460,17 @@ def make_fig_cumulative(df):
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Alphabet)
+                color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
+    template='plotly_white',
       margin=dict(b=0, t=30, l=10),
       legend_orientation="h",
       width=800,
       height=500,
       title=title,
       xaxis=dict(title=''),
+      yaxis=dict(title=''),
       legend=dict(
           title=dict(text=''),
           font=dict(
@@ -463,7 +488,7 @@ def make_fig_cumulative(df):
 def make_fig_increment(df):
   df = pd.read_json(df, orient='split')
   variable = "cumulative_cases_pct_change"
-  title = 'Average daily increase in total confirmed cases'
+  title = '7-day smoothed daily increase in confirmed cases'
 
   fig = px.line(df,
                 x="dateRep",
@@ -475,12 +500,13 @@ def make_fig_increment(df):
                 width=800,
                 height=500,
                 title=title,
-                color_discrete_sequence=px.colors.qualitative.Alphabet)
+                color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
+    template='plotly_white',
       margin=dict(b=0, t=30, l=10),
       legend_orientation="h",
-      yaxis=dict(range=[0, 60], title='Percentage increase'),
+      yaxis=dict(range=[0, 60], title=' % '),
       xaxis=dict(title=''),
       legend=dict(
           title=dict(text=''),
@@ -503,7 +529,7 @@ def make_fig_r0(df):
   r0 = df.groupby("countriesAndTerritories").apply(compute_r0).reset_index(
       level="countriesAndTerritories").drop(columns="countriesAndTerritories")
 
-  final = df.merge(r0, right_index=True, left_index=True)
+  final = df.merge(r0, right_index=True, left_index=True, how='outer')
 
   fig = px.line(final,
                 x="dateRep",
@@ -515,12 +541,13 @@ def make_fig_r0(df):
                 width=800,
                 height=500,
                 title=title,
-                color_discrete_sequence=px.colors.qualitative.Alphabet)
+                color_discrete_sequence=px.colors.qualitative.Pastel)
 
   fig.update_layout(
+    template='plotly_white',
       margin=dict(b=0, t=30, l=10),
       legend_orientation="h",
-      yaxis=dict(range=[0, 5], title='r0'),
+      yaxis=dict(range=[0, 5], title=''),
       xaxis=dict(title=''),
       legend=dict(
           title=dict(text=''),
