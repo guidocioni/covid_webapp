@@ -110,7 +110,9 @@ def read_weekly_ecdc_testing():
       string="Download data on testing for COVID-19 by week and country",
       href=re.compile(".xls"))[0]['href']
 
-  df = pd.read_excel(file_url)
+  def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
+
+  df = pd.read_excel(file_url, parse_dates=[2], date_parser=dateparse)
 
   return df
 
@@ -216,7 +218,7 @@ def serve_layout():
                       id='country-dropdown-multi',
                       options=dropdown_options,
                       value=['Germany', 'Italy', 'France',
-                             'United_States_of_America'],
+                             'Spain', 'Portugal'],
                       multi=True, style={'width': '800px'})),
               html.Div(id='intermediate-value', style={'display': 'none'}),
               html.Div(
@@ -253,6 +255,11 @@ def serve_layout():
           ]),
           dcc.Tab(label='Testing & Hospitalization', className='custom-tab', selected_className='custom-tab--selected', 
             children=[
+              html.Div(['Testing data is weekly. Here is an explanation of the parameters: ', html.Ul(children=[
+                  html.Li('positivity rate - 100 x Number of new confirmed cases/number of tests'),
+                  html.Li('tests done - total tests performed in a specific country'),
+                  html.Li('testing rate - Testing rate per 100 000 population')])]),
+            html.Div('Hospitalization data are either weekly or daily depending on the country selected in the dropdown'),
             html.Div(
                   [
                   dcc.Dropdown(
@@ -278,15 +285,13 @@ def serve_layout():
                   )
               ], style={'display': 'inline-block', 'padding': 10})
             ]),
-          dcc.Tab(label='Logistic fit', className='custom-tab', selected_className='custom-tab--selected', 
+          dcc.Tab(label='Forecast (logistic)', className='custom-tab', selected_className='custom-tab--selected', 
             children=[
-              html.Div('The Blue points show the daily cumulated cases, the red line shows the logistic fit with uncertainty (shaded area), while the\
-                   green curve represents the exponential fit. In the right inset the parameters obtained from the logistic fit are shown: note that these are only parameters, not reliable forecasts!\
+              html.Div('The points show the daily cumulated cases, while the line shows the logistic fit with uncertainty (shaded area).\
+                   In the right inset the parameters obtained from the logistic fit are shown: note that these are only parameters, not reliable forecasts!\
                     The value of R2 is also shown: the closer to 1 the better the fit.'),
               html.Div(['Here is an explanation of the parameters: ', html.Ul(children=[
-                  html.Li('End = First day without new infections'),
-                  html.Li(
-                      'Infection speed = Overall speed of the infection throughout the entire lifecycle'),
+                  html.Li('End = First day without new infections with a threshold of 1/100 on the asymptotic value'),
                   html.Li(
                       'Peak day = Estimated day with maximum growth rate '),
                   html.Li('Max. infected = Asymptotic value for confirmed cases')])]),
@@ -297,7 +302,7 @@ def serve_layout():
                   [dcc.Dropdown(
                       id='country-dropdown-1',
                       options=dropdown_options,
-                      value='Italy'),
+                      value='Austria'),
                    dcc.Graph(
                       id='figure-fit-1',
                       style={'width': '800'}
@@ -316,6 +321,9 @@ def serve_layout():
           ]),
         dcc.Tab(label='Maps', className='custom-tab', selected_className='custom-tab--selected',
           children=[
+            html.Div('Shown is the geographical distribution of many variables. \
+              In the first plot you can select the variable to be plotted and explore the daily variation using the slider.\
+              In the second plot the subnational distribution of the 14 days reporting ratio is shown only for the most recent data: it is updated every week.'),
             html.Div(
                   [dcc.Dropdown(
                       id='variable-dropdown',

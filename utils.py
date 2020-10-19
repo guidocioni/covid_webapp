@@ -29,99 +29,67 @@ def r2(y_obs, y_model):
   return 1. - (np.sum((y_obs - y_model)**2) / np.sum(
       (y_obs - np.mean(y_obs))**2))
 
-
-def do_fit(x, y, p0_log=[3, 10, 150000, 236989], maxfev=50000):
-  '''Perform logistic and exponential fit on x, y
-  Initial parameters are provided '''
-  log_fit = curve_fit(f=logistic_model, xdata=x, ydata=y,
-                      p0=p0_log, maxfev=maxfev)
-  return log_fit
-
-
-def parameters(log_fit, start_date='2020-06-01 00:00:00'):
-  '''obtain some important parameters from the fit'''
-  # Parameters from the logistic fit
-  a, b, c, d = log_fit[0]
-  day_last_index = int(
-      fsolve(lambda x: logistic_model(x, a, b, c, d) - int(c + d), b))
-  try:
-    day_last = pd.date_range(start=pd.to_datetime(start_date),
-                             periods=1000)[day_last_index]
-  except IndexError:
-    day_last = pd.date_range(start=pd.to_datetime(start_date),
-                             periods=1000)[-1]
-
-  try:
-    day_peak = pd.date_range(start=pd.to_datetime(start_date),
-                             periods=1000)[b.round().astype(int)]
-  except IndexError:
-    day_peak = pd.date_range(start=pd.to_datetime(start_date),
-                             periods=1000)[-1]
-
-  speed = a
-  saturation_value = c + d
-
-  return day_last, day_peak, speed, saturation_value
+def parameters(df, log_fit):
+    a, b, c, d = log_fit[0]
+    day_last_index = int(
+      fsolve(lambda x: logistic_model(x, a, b, c, d) - int((c + d) - (c+d)/100), b))
+    day_last = pd.date_range(start=df['dateRep'].iloc[0],
+                             periods=1000)[day_last_index]\
+                            - pd.to_timedelta('20 days')
+    day_peak = pd.date_range(start=df['dateRep'].iloc[0],
+                                 periods=1000)[b.round().astype(int)] \
+                                - pd.to_timedelta('20 days')
+        
+    saturation_value = c+d
+    
+    return {
+        'day_peak' : pd.to_datetime(day_peak).strftime('%d %b %Y'),
+        'day_end' : pd.to_datetime(day_last).strftime('%d %b %Y'),
+        'saturation_value' :saturation_value}
 
 
-def scatter_cases(x, y, color='rgb(252, 141, 98)', symbol="circle", hovertext=None):
-  '''Create a trace for the scatter of the cases'''
-  trace = go.Scatter(name='Confirmed cases',
-                     x=x,
-                     y=y,
+def scatter_cases(df, variable, 
+                  color='rgb(252, 141, 98)', symbol="circle"):
+    '''Create a trace for the scatter of the cases'''
+    trace = go.Scatter(name=variable,
+                     x=df['dateRep'],
+                     y=df[variable],
                      mode="markers",
                      showlegend=True,
                      marker=dict(size=8,
                                  color=color,
                                  opacity=0.8,
-                                 symbol=symbol),
-                     hovertext=hovertext)
+                                 symbol=symbol))
 
-  return trace
-
-
-def scatter_deaths(x, y, color="red", symbol="circle", hovertext=None):
-  '''Create a trace for the scatter of the deaths'''
-  trace = go.Scatter(name='Confirmed deaths',
-                     x=x,
-                     y=y,
-                     mode="markers",
-                     showlegend=True,
-                     marker=dict(size=8,
-                                 color=color,
-                                 opacity=0.6,
-                                 symbol=symbol),
-                     hovertext=hovertext)
-
-  return trace
+    return trace
 
 
-def logistic_curve(x, r2, log_fit, color='rgb(251, 180, 174)', linewidth=2):
-  '''Plot logistic together with range plot for uncertainty'''
-  # Compute standard deviation for parameters for range plot
-
-  trace_log = go.Scatter(name='Logistic fit, R2=%3.3f' % r2,
-                         x=x,
-                         y=logistic_model(x, *log_fit[0]),
+def logistic_curve(df, variable, 
+                   color='rgb(251, 180, 174)', linewidth=2):
+    '''Plot logistic together with range plot for uncertainty'''
+    r2_value = r2(df['cumulative_cases'], df['cumulative_cases_prediction'])
+    trace_log = go.Scatter(name='Logistic fit, R2=%3.3f' % r2_value,
+                         x=df['dateRep'],
+                         y=df['cumulative_cases_prediction'],
                          mode="lines",
                          showlegend=True,
                          line=dict(color=color, width=linewidth))
 
-  trace_log_p1sigma = go.Scatter(
-      x=x,
+    trace_log_p1sigma = go.Scatter(
+      x=df['dateRep'],
       showlegend=False,
-      y=logistic_model(x, *(log_fit[0] + np.sqrt(np.diag(log_fit[1])))),
+      y=df[variable+'_prediction_upper'],
       mode="lines",
       line=dict(color=color, width=0))
-  trace_log_m1sigma = go.Scatter(
-      x=x,
+    trace_log_m1sigma = go.Scatter(
+      x=df['dateRep'],
       showlegend=False,
-      y=logistic_model(x, *(log_fit[0] - np.sqrt(np.diag(log_fit[1])))),
+      y=df[variable+'_prediction_lower'],
       mode="lines",
       line=dict(color=color, width=0),
       fill='tonexty')
 
-  return [trace_log, trace_log_p1sigma, trace_log_m1sigma]
+    return [trace_log, trace_log_p1sigma, trace_log_m1sigma]
 
 
 def exponential_curve(x, r2, exp_fit, color='green', linewidth=2):
@@ -137,31 +105,77 @@ def exponential_curve(x, r2, exp_fit, color='green', linewidth=2):
   return trace_exponential
 
 
-def new_cases(x, y, hovertext=None):
-  trace = go.Bar(name='Daily cases variation',
-                 x=x,
-                 y=y,
+
+def new_cases(df, variable, color='rgb(252, 141, 98)',):
+    scatter = go.Bar(name=variable+' variation',
+                 x=df['dateRep'],
+                 y=df[variable].diff(),
                  xaxis='x2',
                  yaxis='y2',
                  showlegend=False,
-                 hovertext=hovertext)
-  return trace
+                    marker_color=color)
+    line = go.Scatter(
+                 x=df['dateRep'],
+                 y=df[variable+'_prediction'].diff(),
+                 xaxis='x2',
+                 yaxis='y2',
+                 showlegend=False,
+                 mode="lines",
+    marker_color=color)
+    return [scatter, line]
 
 
-def prepare_data(df):
-  '''Prepare the data needed for the fit. This should be
-  already filtered by country.'''
-  # We decide which date to start from finding the minimum of cases
-  subset = df.copy()
-  beginning_date = subset[subset.index == subset.cases.rolling(
+def prepare_data(df, variable):
+    '''Prepare the data needed for the fit. This should be
+    already filtered by country.'''
+    subset = df.copy()
+    # We decide which date to start from finding the minimum of cases
+    beginning_date = subset[subset.index == subset.cases.rolling(
       7).mean().idxmin()].dateRep.values[0]
-  subset = subset[subset.dateRep >= beginning_date]
-  subset['cumulative_cases'] = subset['cumulative_cases'] - \
-      subset['cumulative_cases'].min()
-  date_shift = beginning_date - pd.to_timedelta('20 days')
-  subset.loc[:, 'days'] = subset.loc[:, 'dateRep'] - date_shift
+    subset = subset[subset.dateRep >= beginning_date]
+    date_shift = beginning_date - pd.to_timedelta('20 days')
+    subset.loc[:, 'days'] = subset.loc[:, 'dateRep'] - date_shift
 
-  return subset
+    return subset
+
+def fit_data(df, variable, maxfev=80000):
+    '''Fit data from the dataframe and obtain fit parameters'''
+    input_df = prepare_data(df, variable)
+    xdata = input_df['days'].dt.days.values
+    ydata = input_df[variable].values
+    # some empirical parameters that seem to work
+    # [speed, day_inflection, max-min infections, min infections]
+    p0_bounds = ([0, 20, 10000, ydata.min()],
+                        [np.inf, np.inf, np.inf, ydata.min() + 1])
+    # Do the fit 
+    log_fit = curve_fit(f=logistic_model, 
+                        xdata=xdata, 
+                        ydata=ydata,
+                        bounds=p0_bounds,
+                        maxfev=maxfev)
+    
+    return log_fit, input_df
+
+def predict_data(df, variable, days_prediction=50):
+    '''Predict evolution of variable according to fit'''
+    # First fit the data
+    log_fit, input_df = fit_data(df, variable)
+    # Construct future prediction
+    future_df = pd.DataFrame(
+    {'dateRep' : pd.date_range(start=input_df['dateRep'].max() + pd.to_timedelta('1 D'),
+              periods=days_prediction),
+     'days' : pd.timedelta_range(input_df['days'].max() + pd.to_timedelta('1 D'),
+                                 periods=days_prediction)
+    })
+
+    final = pd.concat([input_df, future_df]).reset_index(drop=True)
+    final[variable+'_prediction'] = logistic_model(final['days'].dt.days.values,
+                                                      *log_fit[0])
+    final[variable+'_prediction_upper'] = logistic_model(final['days'].dt.days.values,
+                                                      *(log_fit[0] + np.sqrt(np.diag(log_fit[1]))))
+    final[variable+'_prediction_lower'] = logistic_model(final['days'].dt.days.values,
+                                                      *(log_fit[0] - np.sqrt(np.diag(log_fit[1]))))
+    return final, log_fit
 
 
 def get_countries():
@@ -172,10 +186,10 @@ def get_countries():
   return list(df.countriesAndTerritories.unique())
 
 
-def figure_layout(title, country, xmax, ymax, xmin, ymin, day_last_string,
-                  day_peak_string, shift_day_string, speed, saturation_value):
-  '''Set the figure layout'''
-  layout = dict(
+def figure_layout(title, country, day_last_string,
+                  day_peak_string, saturation_value):
+    '''Set the figure layout'''
+    layout = dict(
       template='plotly_white',
       title=title,
       showlegend=True,
@@ -183,9 +197,7 @@ def figure_layout(title, country, xmax, ymax, xmin, ymin, day_last_string,
       width=800,
       margin=dict(r=5, b=20, t=30, l=10),
       font=dict(family='arial'),
-      yaxis=dict(
-          range=[ymin, ymax], title='Cumulative Cases (%s) w.r.t. initial date' % country),
-      xaxis=dict(range=[xmin, xmax], title='Days from %s' % shift_day_string),
+      yaxis=dict(title='Cumulative Cases (%s)' % country),
       legend=dict(x=0.75, y=0.1),
       annotations=[
           dict(
@@ -193,8 +205,8 @@ def figure_layout(title, country, xmax, ymax, xmin, ymin, day_last_string,
               y=0.4,
               xref="paper",
               yref="paper",
-              text="<b>Fit parameters (logistic)</b> <br> End = %s <br> Infection speed =  %3.1f <br> Peak day = %s <br> Max. infected = %d"
-              % (day_last_string, speed, day_peak_string, saturation_value),
+              text="<b>Fit parameters (logistic)</b> <br> End = %s <br> Peak day = %s <br> Max. cases = %d"
+              % (day_last_string, day_peak_string, saturation_value),
               showarrow=False,
               bgcolor='#E2E2E2')
       ],
@@ -204,55 +216,29 @@ def figure_layout(title, country, xmax, ymax, xmin, ymin, day_last_string,
                   title='Daily new cases',
                   tickfont=dict(size=8),
                   titlefont=dict(size=10)))
-  return layout
+    return layout
+
 
 
 def make_fig_fit_base(df):
-  subset = prepare_data(df)
-  shift_day = subset['dateRep'].iloc[0] - subset['days'].iloc[0]
+    prediction, fit = predict_data(df, 'cumulative_cases', days_prediction=60)
+    parameters_fit = parameters(prediction, fit)
 
-  x = subset.days.dt.days.values
-  y = subset.cumulative_cases.values
+    # Scatter with the cases
+    cases = scatter_cases(prediction, 'cumulative_cases')
+    traces_logistic = logistic_curve(prediction, 'cumulative_cases')
+    trace_daily = new_cases(prediction, 'cumulative_cases')
 
-  log_fit = do_fit(x, y, p0_log=[3, 10, 100000, y.min()])
+    plot_traces = traces_logistic + [cases] + trace_daily
 
-  day_last, day_peak, speed, saturation_value = parameters(log_fit, shift_day)
+    layout = figure_layout(title='', country=df.countriesAndTerritories.unique()[0],
+                         day_last_string=parameters_fit['day_end'],
+                         day_peak_string=parameters_fit['day_peak'],
+                         saturation_value=parameters_fit['saturation_value'])
 
-  # y values predicted by logistic and exponential fit, computed on real x values
-  y_pred_logistic = logistic_model(x, *log_fit[0])
+    covid_fig = go.Figure(data=plot_traces, layout=layout)
 
-  # Just a discrete x to plot the values outside of the observed range
-  x_pred = np.arange(x.min() - 10, x.max() + 50)
-
-  # Scatter with the cases
-  cases = scatter_cases(x, y, hovertext=subset.dateRep)
-
-  traces_logistic = logistic_curve(x_pred, r2(y, y_pred_logistic), log_fit)
-
-  trace_daily = new_cases(x, subset.cases, hovertext=subset.dateRep)
-
-  traces_logistic.append(cases)
-  traces_logistic.append(trace_daily)
-
-  data = traces_logistic
-
-  xmax, ymax = x_pred.max() - 10, y.max() + 10000
-  xmin, ymin = 20, -1000
-
-  layout = figure_layout(title='', country=df.countriesAndTerritories.unique()[0],
-                         xmax=xmax,
-                         xmin=xmin,
-                         ymax=ymax,
-                         ymin=ymin,
-                         day_last_string=day_last.strftime('%d %b %Y'),
-                         day_peak_string=day_peak.strftime('%d %b %Y'),
-                         shift_day_string=shift_day.strftime('%d %b %Y'),
-                         speed=speed,
-                         saturation_value=saturation_value)
-
-  covid_fig = go.Figure(data=data, layout=layout)
-
-  return covid_fig
+    return covid_fig
 
 
 def make_fig_map_base(df, variable):
