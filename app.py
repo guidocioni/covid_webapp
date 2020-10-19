@@ -39,10 +39,11 @@ app = dash.Dash(__name__,
                     },
                     {
                         'property': 'og:url',
-                        'content': 'https://covid-guido.herokuapp.com/'
+                        'content': 'http://covid-dashboard.guidocioni.it'
                     }
                 ],
-                suppress_callback_exceptions=True)
+                suppress_callback_exceptions=True,
+                url_base_pathname='/covid/')
 server = app.server
 app.title = 'COVID-19 live forecast'
 

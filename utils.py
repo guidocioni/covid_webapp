@@ -308,7 +308,7 @@ def make_fig_testing_base(df, variable):
             hover_name="country",
             line_shape="spline",
             render_mode="svg",
-            color_discrete_sequence=px.colors.qualitative.Pastel)
+            color_discrete_sequence=px.colors.qualitative.Set2 + px.colors.qualitative.Set3)
 
   fig.update_layout(
   template='plotly_white',
