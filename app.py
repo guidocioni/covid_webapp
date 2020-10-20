@@ -57,31 +57,17 @@ threshold_chosen = 10000
 
 
 @cache.memoize(timeout=TIMEOUT)
-def read_ecdc():
-  '''Reader from ECDC which should be a reliable source for many data. 
+def read_owid():
+  '''Reader from OWID which should be a reliable source for many data. 
   '''
-  def dateparse(x): return pd.to_datetime(x, format='%d/%m/%Y')
-  df = pd.read_csv(
-      'https://opendata.ecdc.europa.eu/covid19/casedistribution/csv/',
-      # usecols=[0, 4, 5, 10],
-      parse_dates=[0],
-      date_parser=dateparse,
-      index_col=0)
+  df = pd.read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv", 
+    parse_dates=[3], index_col=[3])
 
   df = df.sort_index()
 
-  df['cumulative_cases'] = df.groupby(by=['countriesAndTerritories'])['cases'].cumsum()
-  df['cumulative_deaths']=  df.groupby(by=['countriesAndTerritories'])['deaths'].cumsum()
-
-  df['cumulative_cases_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_cases'].pct_change().rolling(7).mean()*100.
-  df['cumulative_deaths_pct_change'] = df.groupby("countriesAndTerritories")['cumulative_deaths'].pct_change().rolling(7).mean()*100.
-
-  # Compute case density
-
-  df['cumulative_cases_density'] = (
-      df['cumulative_cases'] / df['popData2019']) * 1e5
-  df['cumulative_deaths_density'] = (
-      df['cumulative_deaths'] / df['popData2019']) * 1e5
+  df['total_cases_change'] = df.groupby("location")['total_cases'].pct_change().rolling(7).mean()*100.
+  df['total_deaths_change'] = df.groupby("location")['total_deaths'].pct_change().rolling(7).mean()*100.
+  df['positive_rate'] = df['positive_rate'] * 100.
 
   return df.reset_index()
 
@@ -99,22 +85,6 @@ def read_weekly_ecdc():
 
   # Only return last week otherwise it takes too long to make the picture
   return df[df.year_week == df.year_week.max()]
-
-@cache.memoize(timeout=TIMEOUT)
-def read_weekly_ecdc_testing():
-  '''Reader from ECDC which should be a reliable source for many data. 
-  '''
-  r = requests.get('https://www.ecdc.europa.eu/en/publications-data/covid-19-testing')
-  soup = BeautifulSoup(r.text, features="lxml")
-  file_url = soup.findAll('a',
-      string="Download data on testing for COVID-19 by week and country",
-      href=re.compile(".xls"))[0]['href']
-
-  def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
-
-  df = pd.read_excel(file_url, parse_dates=[2], date_parser=dateparse)
-
-  return df
 
 @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
@@ -135,29 +105,29 @@ def read_hospitalization():
   return df
 
 
-def filter_data(country=None, start_date=None, threshold=None):
+def filter_data(countries=None, start_date=None, threshold=None):
   '''- Specify country if you want data for a single country.
 - Specify threshold if you want to filter out countries that do 
   not have at least threshold cases (cumulative) in the latest update
 - Specify start_date to filter data after this date (included)'''
-  df = read_ecdc()
+  df = read_owid()
   # Only filter after start date
   if start_date:
-    df = df[df.dateRep >= start_date]
+    df = df[df.date >= start_date]
 
-  if country:
-    if df.countriesAndTerritories.isin(country).any():
-      df = df[df.countriesAndTerritories.isin(country)]
+  if countries:
+    if df.location.isin(countries).any():
+      df = df[df.location.isin(countries)]
     else:
       print('Wrong country specified. Use one of the follwing:')
-      print(df.countriesAndTerritories.unique())
+      print(df.location.unique())
       print('Defaulting to all countries...')
 
-  if (not country) and threshold:
-    latest = df[df.dateRep == df.dateRep.unique()[-1]]
-    countries_filter = latest[latest.cumulative_cases >
-                              threshold].countriesAndTerritories.unique()
-    df = df[df.countriesAndTerritories.isin(list(countries_filter))]
+  if (not countries) and threshold:
+    latest = df[df.date == df.date.max()]
+    countries_filter = latest[latest.total_cases >
+                              threshold].location.unique()
+    df = df[df.location.isin(list(countries_filter))]
 
   return df
 
@@ -166,7 +136,7 @@ def filter_data(country=None, start_date=None, threshold=None):
     Output('intermediate-value', 'children'),
     [Input('country-dropdown-multi', 'value')])
 def filter_data_for_countries(country):
-  return filter_data(country=country,
+  return filter_data(countries=country,
                      start_date='2020-03-15',
                      threshold=threshold_chosen).to_json(date_format='iso', orient='split')
 
@@ -174,24 +144,45 @@ def filter_data_for_countries(country):
 
 
 def serve_layout():
-  dropdown_options = []
-  countries_list = list(filter_data().countriesAndTerritories.unique())
   variable_options = [
-    {"label":'Daily cases', "value":'cases'},
-    {"label":'Daily deaths', "value":'deaths'},
-    {"label":'14 days reporting ratio per 100k', "value":'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000'},
-    {"label":'Cumulative cases', "value":'cumulative_cases'},
-    {"label":'Cumulative deaths', "value":'cumulative_deaths'},
-    {"label":'Cumulative cases pct. change', "value":'cumulative_cases_pct_change'},
-    {"label":'Cumulative deaths pct. change', "value":'cumulative_deaths_pct_change'},
-    {"label":'Cumulative cases density per 100k', "value":'cumulative_cases_density'},
-    {"label":'Cumulative deaths density per 100k', "value":'cumulative_deaths_density'}
+     {'value': 'total_cases', 'label': 'Total confirmed cases of COVID-19'},
+     {'value': 'new_cases', 'label': 'New confirmed cases of COVID-19'},
+     {'value': 'new_cases_smoothed',
+      'label': 'New confirmed cases of COVID-19 (7-day smoothed)'},
+     {'value': 'total_deaths',
+      'label': 'Total deaths attributed to COVID-19'},
+     {'value': 'new_deaths', 'label': 'New deaths attributed to COVID-19'},
+     {'value': 'new_deaths_smoothed',
+      'label': 'New deaths attributed to COVID-19 (7-day smoothed)'},
+     {'value': 'total_cases_per_million',
+      'label': 'Total confirmed cases of COVID-19 per 1,000,000 people'},
+     {'value': 'new_cases_per_million',
+      'label': 'New confirmed cases of COVID-19 per 1,000,000 people'},
+     {'value': 'new_cases_smoothed_per_million',
+      'label': 'New confirmed cases of COVID-19 (7-day smoothed) per 1,000,000 people'},
+     {'value': 'total_deaths_per_million',
+      'label': 'Total deaths attributed to COVID-19 per 1,000,000 people'},
+     {'value': 'new_deaths_per_million',
+      'label': 'New deaths attributed to COVID-19 per 1,000,000 people'}
   ]
   variable_options_2 = [
-    {"label":'Tests done', "value":'tests_done'},
-    {"label":'Testing rate', "value":'testing_rate'},
-    {"label":'Positivity rate', "value":'positivity_rate'}
+      {'value': 'total_tests', 'label': 'Total tests for COVID-19'},
+      {'value': 'new_tests', 'label': 'New tests for COVID-19'},
+      {'value': 'new_tests_smoothed',
+      'label': "New tests for COVID-19 (7-day smoothed)."},
+      {'value': 'total_tests_per_thousand',
+      'label': 'Total tests for COVID-19 per 1,000 people'},
+      {'value': 'new_tests_per_thousand',
+      'label': 'New tests for COVID-19 per 1,000 people'},
+      {'value': 'new_tests_smoothed_per_thousand',
+      'label': 'New tests for COVID-19 (7-day smoothed) per 1,000 people'},
+      {'value': 'tests_per_case',
+      'label': 'Tests conducted per new confirmed case of COVID-19'},
+      {'value': 'positive_rate',
+      'label': 'The share of COVID-19 tests that are positive'}
   ]
+  dropdown_options = []
+  countries_list = list(filter_data().location.unique())
   for cnt in countries_list:
     dropdown_options.append({"label": cnt, "value": cnt})
 
@@ -203,7 +194,7 @@ def serve_layout():
   return html.Div(children=[
       html.Div(html.H1('COVID-19 Monitoring')),
       html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
-      html.Div('Last Update: %s' % str(filter_data().dateRep.max())),
+      html.Div('Last Update: %s' % str(filter_data().date.max())),
       #
       dcc.Tabs(parent_className='custom-tabs', className='custom-tabs-container', 
         children=[
@@ -263,9 +254,14 @@ def serve_layout():
             html.Div(
                   [
                   dcc.Dropdown(
+                      id='country-dropdown-testing',
+                      options=dropdown_options,
+                      value=['Austria','Germany'],
+                      multi=True, style={'width': '800px'}),
+                  dcc.Dropdown(
                       id='variable-dropdown-2',
                       options=variable_options_2,
-                      value='positivity_rate',
+                      value='positive_rate',
                       multi=False, style={'width': '800px'}),
                   dcc.Graph(
                       id='figure-testing',
@@ -328,7 +324,7 @@ def serve_layout():
                   [dcc.Dropdown(
                       id='variable-dropdown',
                       options=variable_options,
-                      value='cumulative_cases_pct_change'),
+                      value="new_cases_smoothed_per_million"),
                    dcc.Graph(
                       id='figure-map-world',
                       style={'width': '800'}
@@ -392,21 +388,20 @@ app.layout = serve_layout
 
 def make_table():
   df = filter_data(start_date='2020-03-15', threshold=1000)
-  df = df.loc[df.dateRep == df.dateRep.max()].drop(columns=['dateRep', 'day','month','year','geoId','popData2019', 'countryterritoryCode'])\
-          .round(3).sort_values(by="cumulative_cases_pct_change", ascending=False)
+  df = df.loc[df.date == df.date.max()]\
+          .round(3).sort_values(by="total_cases_change", ascending=False)
 
   columns = [
-     {'name': 'Continent', 'id': 'continentExp', 'hideable': True, 'type':'text'},
-     {'name': 'Country', 'id': 'countriesAndTerritories', 'hideable': True, 'type':'text'},
-     {'name': 'Daily Cases', 'id': 'cases', 'hideable': True, 'type':'numeric'},
-     {'name': 'Daily Deaths', 'id': 'deaths', 'hideable': True, 'type':'numeric'},
-     {'name': '14-days cumulative per 100k', 'id': 'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative cases', 'id': 'cumulative_cases', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative deaths', 'id': 'cumulative_deaths', 'hideable': True, 'type':'numeric'},
-     {'name': 'Pct. change of cumulative cases', 'id': 'cumulative_cases_pct_change', 'hideable': True, 'type':'numeric'},
-     {'name': 'Pct. change of cumulative deaths','id': 'cumulative_deaths_pct_change', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative cases density per 100k inhabitants', 'id': 'cumulative_cases_density', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative deaths density per 100k inhabitants', 'id': 'cumulative_deaths_density', 'hideable': True, 'type':'numeric'}]
+     {'name': 'Continent', 'id': 'continent', 'hideable': True, 'type':'text'},
+     {'name': 'Country', 'id': 'location', 'hideable': True, 'type':'text'},
+     {'name': 'Daily Cases', 'id': 'new_cases', 'hideable': True, 'type':'numeric'},
+     {'name': 'Daily Deaths', 'id': 'new_deaths', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative cases', 'id': 'total_cases', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative deaths', 'id': 'total_deaths', 'hideable': True, 'type':'numeric'},
+     {'name': 'Pct. change of cumulative cases', 'id': 'total_cases_change', 'hideable': True, 'type':'numeric'},
+     {'name': 'Pct. change of cumulative deaths','id': 'total_deaths_change', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative cases density per 1M inhabitants', 'id': 'total_cases_per_million', 'hideable': True, 'type':'numeric'},
+     {'name': 'Cumulative deaths density per 1M inhabitants', 'id': 'total_deaths_per_million', 'hideable': True, 'type':'numeric'}]
 
   data=df.to_dict('records')
 
@@ -423,13 +418,13 @@ def make_fig_map_weekly_europe():
 def make_fig_hospitalization(country):
   df = read_hospitalization()
 
-  return make_fig_hospitalization_base(df[df.country==country])
+  return make_fig_hospitalization_base(df[df.country == country])
 
 @app.callback(
     Output('figure-testing', 'figure'),
-    [Input('variable-dropdown-2', 'value')])
-def make_fig_testing(variable):
-  df = read_weekly_ecdc_testing()
+    [Input('variable-dropdown-2', 'value'), Input('country-dropdown-testing', 'value')])
+def make_fig_testing(variable, country):
+  df = filter_data(countries=country, start_date='2020-03-01')
 
   return make_fig_testing_base(df, variable)
 
@@ -445,7 +440,7 @@ def make_fig_map_world(variable):
     Output('figure-fit-1', 'figure'),
     [Input('country-dropdown-1', 'value')])
 def make_fig_fit(country):
-  df = filter_data(country=[country], start_date='2020-05-01')
+  df = filter_data(countries=[country], start_date='2020-05-01')
 
   return make_fig_fit_base(df)
 
@@ -453,7 +448,7 @@ def make_fig_fit(country):
     Output('figure-fit-2', 'figure'),
     [Input('country-dropdown-2', 'value')])
 def make_fig_fit(country):
-  df = filter_data(country=[country], start_date='2020-05-01')
+  df = filter_data(countries=[country], start_date='2020-05-01')
 
   return make_fig_fit_base(df)
 
@@ -465,15 +460,15 @@ def make_fig_cumulative_1(df):
   '''Give as input a threshold for the cumulative cases in the most updated
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
-  variable = "cumulative_cases"
+  variable = "total_cases"
   log_y = True
   title = 'Confirmed cases evolution (log. scale, cumulative sum)'
 
   fig = px.line(df,
-                x="dateRep",
+                x="date",
                 y=variable,
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
@@ -507,15 +502,15 @@ def make_fig_cumulative_2(df):
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
 
-  variable = "cumulative_cases_density"
+  variable = "total_cases_per_million"
   log_y = False
-  title = 'Density of cases (cumulative sum) per 100,000 inhabitants'
+  title = 'Density of cases (cumulative sum) per 1M inhabitants'
 
   fig = px.line(df,
-                x="dateRep",
+                x="date",
                 y=variable,
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
@@ -549,15 +544,15 @@ def make_fig_cumulative_3(df):
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
 
-  variable = "cumulative_deaths"
+  variable = "total_deaths"
   log_y = True
   title = 'Confirmed deaths evolution (log. scale, cumulative sum)'
 
   fig = px.line(df,
-                x="dateRep",
+                x="date",
                 y=variable,
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 log_y=log_y,
@@ -589,16 +584,15 @@ def make_fig_cases(df):
   '''Give as input a threshold for the cumulative cases in the most updated
   timestep to filter out countries that do not have many cases.'''
   df = pd.read_json(df, orient='split')
-  df['cases'] = df.groupby("countriesAndTerritories")['cases'].rolling(7).mean().reset_index(0,drop=True)
 
-  variable = "cases"
+  variable = "new_cases_smoothed"
   title = '7-day smoothed Daily cases evolution'
 
   fig = px.line(df,
-                x="dateRep",
+                x="date",
                 y=variable,
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 color_discrete_sequence=px.colors.qualitative.Pastel)
@@ -628,14 +622,14 @@ def make_fig_cases(df):
     [Input('intermediate-value', 'children')])
 def make_fig_increment(df):
   df = pd.read_json(df, orient='split')
-  variable = "cumulative_cases_pct_change"
+  variable = "total_cases_change"
   title = '7-day smoothed daily increase in confirmed cases'
 
   fig = px.line(df,
-                x="dateRep",
+                x="date",
                 y=variable,
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 width=800,
@@ -667,16 +661,16 @@ def make_fig_r0(df):
   df = pd.read_json(df, orient='split')
   title = 'Reproductivity ratio r0 (estimated using RKI method)'
 
-  r0 = df.groupby("countriesAndTerritories").apply(compute_r0).reset_index(
-      level="countriesAndTerritories").drop(columns="countriesAndTerritories")
+  r0 = df.groupby("location").apply(compute_r0).reset_index(
+      level="location").drop(columns="location")
 
   final = df.merge(r0, right_index=True, left_index=True, how='outer')
 
   fig = px.line(final,
-                x="dateRep",
+                x="date",
                 y='r0',
-                color="countriesAndTerritories",
-                hover_name="countriesAndTerritories",
+                color="location",
+                hover_name="location",
                 line_shape="spline",
                 render_mode="svg",
                 width=800,

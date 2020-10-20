@@ -11,8 +11,8 @@ def compute_r0(group, window=7):
   # Compute R0 using RKI method
   r0 = []
   for t in range((2 * window) - 1, len(group)):
-    r0.append(group.iloc[t - window + 1:t + 1]['cases'].sum() /
-              group.iloc[t - (2 * window) + 1:t - window + 1]['cases'].sum())
+    r0.append(group.iloc[t - window + 1:t + 1]['new_cases'].sum() /
+              group.iloc[t - (2 * window) + 1:t - window + 1]['new_cases'].sum())
 
   return pd.DataFrame(data={'r0': r0}, index=group.index[(2 * window) - 1:])
 
@@ -33,10 +33,10 @@ def parameters(df, log_fit):
     a, b, c, d = log_fit[0]
     day_last_index = int(
       fsolve(lambda x: logistic_model(x, a, b, c, d) - int((c + d) - (c+d)/100), b))
-    day_last = pd.date_range(start=df['dateRep'].iloc[0],
+    day_last = pd.date_range(start=df['date'].iloc[0],
                              periods=1000)[day_last_index]\
                             - pd.to_timedelta('20 days')
-    day_peak = pd.date_range(start=df['dateRep'].iloc[0],
+    day_peak = pd.date_range(start=df['date'].iloc[0],
                                  periods=1000)[b.round().astype(int)] \
                                 - pd.to_timedelta('20 days')
         
@@ -52,7 +52,7 @@ def scatter_cases(df, variable,
                   color='rgb(252, 141, 98)', symbol="circle"):
     '''Create a trace for the scatter of the cases'''
     trace = go.Scatter(name=variable,
-                     x=df['dateRep'],
+                     x=df['date'],
                      y=df[variable],
                      mode="markers",
                      showlegend=True,
@@ -67,22 +67,22 @@ def scatter_cases(df, variable,
 def logistic_curve(df, variable, 
                    color='rgb(251, 180, 174)', linewidth=2):
     '''Plot logistic together with range plot for uncertainty'''
-    r2_value = r2(df['cumulative_cases'], df['cumulative_cases_prediction'])
+    r2_value = r2(df['total_cases'], df['total_cases_prediction'])
     trace_log = go.Scatter(name='Logistic fit, R2=%3.3f' % r2_value,
-                         x=df['dateRep'],
-                         y=df['cumulative_cases_prediction'],
+                         x=df['date'],
+                         y=df['total_cases_prediction'],
                          mode="lines",
                          showlegend=True,
                          line=dict(color=color, width=linewidth))
 
     trace_log_p1sigma = go.Scatter(
-      x=df['dateRep'],
+      x=df['date'],
       showlegend=False,
       y=df[variable+'_prediction_upper'],
       mode="lines",
       line=dict(color=color, width=0))
     trace_log_m1sigma = go.Scatter(
-      x=df['dateRep'],
+      x=df['date'],
       showlegend=False,
       y=df[variable+'_prediction_lower'],
       mode="lines",
@@ -92,30 +92,16 @@ def logistic_curve(df, variable,
     return [trace_log, trace_log_p1sigma, trace_log_m1sigma]
 
 
-def exponential_curve(x, r2, exp_fit, color='green', linewidth=2):
-  '''Plot the exponential fit '''
-
-  trace_exponential = go.Scatter(name='Exponential fit,  R2=%3.3f' % r2,
-                                 x=x,
-                                 y=exponential_model(x, *exp_fit[0]),
-                                 mode="lines",
-                                 showlegend=True,
-                                 line=dict(color=color, width=linewidth))
-
-  return trace_exponential
-
-
-
 def new_cases(df, variable, color='rgb(252, 141, 98)',):
     scatter = go.Bar(name=variable+' variation',
-                 x=df['dateRep'],
+                 x=df['date'],
                  y=df[variable].diff(),
                  xaxis='x2',
                  yaxis='y2',
                  showlegend=False,
                     marker_color=color)
     line = go.Scatter(
-                 x=df['dateRep'],
+                 x=df['date'],
                  y=df[variable+'_prediction'].diff(),
                  xaxis='x2',
                  yaxis='y2',
@@ -130,11 +116,11 @@ def prepare_data(df, variable):
     already filtered by country.'''
     subset = df.copy()
     # We decide which date to start from finding the minimum of cases
-    beginning_date = subset[subset.index == subset.cases.rolling(
-      7).mean().idxmin()].dateRep.values[0]
-    subset = subset[subset.dateRep >= beginning_date]
+    beginning_date = subset[subset.index == subset.new_cases.rolling(
+      7).mean().idxmin()].date.values[0]
+    subset = subset[subset.date >= beginning_date]
     date_shift = beginning_date - pd.to_timedelta('20 days')
-    subset.loc[:, 'days'] = subset.loc[:, 'dateRep'] - date_shift
+    subset.loc[:, 'days'] = subset.loc[:, 'date'] - date_shift
 
     return subset
 
@@ -162,7 +148,7 @@ def predict_data(df, variable, days_prediction=50):
     log_fit, input_df = fit_data(df, variable)
     # Construct future prediction
     future_df = pd.DataFrame(
-    {'dateRep' : pd.date_range(start=input_df['dateRep'].max() + pd.to_timedelta('1 D'),
+    {'date' : pd.date_range(start=input_df['date'].max() + pd.to_timedelta('1 D'),
               periods=days_prediction),
      'days' : pd.timedelta_range(input_df['days'].max() + pd.to_timedelta('1 D'),
                                  periods=days_prediction)
@@ -176,15 +162,6 @@ def predict_data(df, variable, days_prediction=50):
     final[variable+'_prediction_lower'] = logistic_model(final['days'].dt.days.values,
                                                       *(log_fit[0] - np.sqrt(np.diag(log_fit[1]))))
     return final, log_fit
-
-
-def get_countries():
-  df = pd.read_csv(
-      'https://opendata.ecdc.europa.eu/covid19/casedistribution/csv/',
-      usecols=[10])
-
-  return list(df.countriesAndTerritories.unique())
-
 
 def figure_layout(title, country, day_last_string,
                   day_peak_string, saturation_value):
@@ -221,17 +198,17 @@ def figure_layout(title, country, day_last_string,
 
 
 def make_fig_fit_base(df):
-    prediction, fit = predict_data(df, 'cumulative_cases', days_prediction=60)
+    prediction, fit = predict_data(df, 'total_cases', days_prediction=60)
     parameters_fit = parameters(prediction, fit)
 
     # Scatter with the cases
-    cases = scatter_cases(prediction, 'cumulative_cases')
-    traces_logistic = logistic_curve(prediction, 'cumulative_cases')
-    trace_daily = new_cases(prediction, 'cumulative_cases')
+    cases = scatter_cases(prediction, 'total_cases')
+    traces_logistic = logistic_curve(prediction, 'total_cases')
+    trace_daily = new_cases(prediction, 'total_cases')
 
     plot_traces = traces_logistic + [cases] + trace_daily
 
-    layout = figure_layout(title='', country=df.countriesAndTerritories.unique()[0],
+    layout = figure_layout(title='', country=df.location.unique()[0],
                          day_last_string=parameters_fit['day_end'],
                          day_peak_string=parameters_fit['day_peak'],
                          saturation_value=parameters_fit['saturation_value'])
@@ -242,10 +219,10 @@ def make_fig_fit_base(df):
 
 
 def make_fig_map_base(df, variable):
-  fig = px.choropleth(df, locations="countryterritoryCode",
+  fig = px.choropleth(df, locations="iso_code",
                       color=variable,
-                      hover_name="countriesAndTerritories",
-                      animation_frame=df.dateRep.astype(str),
+                      hover_name="location",
+                      animation_frame=df.date.astype(str),
                       color_continuous_scale="YlOrRd")
   fig.update_geos(projection_type="kavrayskiy7")
   fig.update_layout(coloraxis_colorbar=dict(title=""),
@@ -287,11 +264,11 @@ def make_fig_map_weekly(df):
   return fig
 
 def make_fig_testing_base(df, variable):
-  fig = px.line(df.sort_values(by='year_week'),
-            x="year_week",
+  fig = px.line(df.sort_values(by='date'),
+            x="date",
             y=variable,
-            color="country",
-            hover_name="country",
+            color="location",
+            hover_name="location",
             line_shape="spline",
             render_mode="svg",
             color_discrete_sequence=px.colors.qualitative.Set2 + px.colors.qualitative.Set3)
