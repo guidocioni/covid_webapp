@@ -58,18 +58,18 @@ threshold_chosen = 10000
 
 @cache.memoize(timeout=TIMEOUT)
 def read_owid():
-  '''Reader from OWID which should be a reliable source for many data. 
-  '''
-  df = pd.read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv", 
-    parse_dates=[3], index_col=[3])
+    '''Reader from OWID which should be a reliable source for many data. 
+    '''
+    df = pd.read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
+      parse_dates=[3], index_col=[3])
 
-  df = df.sort_index()
+    df = df.sort_index()
 
-  df['total_cases_change'] = df.groupby("location")['total_cases'].pct_change().rolling(7).mean()*100.
-  df['total_deaths_change'] = df.groupby("location")['total_deaths'].pct_change().rolling(7).mean()*100.
-  df['positive_rate'] = df['positive_rate'] * 100.
+    df['total_cases_change'] = df.groupby("location")['total_cases'].pct_change().rolling(7).mean()*100.
+    df['total_deaths_change'] = df.groupby("location")['total_deaths'].pct_change().rolling(7).mean()*100.
+    df['positive_rate'] = df['positive_rate'] * 100.
 
-  return df.reset_index()
+    return df.reset_index()
 
 @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
@@ -137,7 +137,7 @@ def filter_data(countries=None, start_date=None, threshold=None):
     [Input('country-dropdown-multi', 'value')])
 def filter_data_for_countries(country):
   return filter_data(countries=country,
-                     start_date='2020-03-15',
+                     start_date='2020-04-01',
                      threshold=threshold_chosen).to_json(date_format='iso', orient='split')
 
 # Set up the layout
@@ -387,312 +387,188 @@ def serve_layout():
 app.layout = serve_layout
 
 def make_table():
-  df = filter_data(start_date='2020-03-15', threshold=1000)
-  df = df.loc[df.date == df.date.max()]\
-          .round(3).sort_values(by="total_cases_change", ascending=False)
+    df = filter_data(start_date='2020-03-15', threshold=1000)
+    df = df.loc[df.date == df.date.max()]\
+            .round(3).sort_values(by="total_cases_change", ascending=False)
 
-  columns = [
-     {'name': 'Continent', 'id': 'continent', 'hideable': True, 'type':'text'},
-     {'name': 'Country', 'id': 'location', 'hideable': True, 'type':'text'},
-     {'name': 'Daily Cases', 'id': 'new_cases', 'hideable': True, 'type':'numeric'},
-     {'name': 'Daily Deaths', 'id': 'new_deaths', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative cases', 'id': 'total_cases', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative deaths', 'id': 'total_deaths', 'hideable': True, 'type':'numeric'},
-     {'name': 'Pct. change of cumulative cases', 'id': 'total_cases_change', 'hideable': True, 'type':'numeric'},
-     {'name': 'Pct. change of cumulative deaths','id': 'total_deaths_change', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative cases density per 1M inhabitants', 'id': 'total_cases_per_million', 'hideable': True, 'type':'numeric'},
-     {'name': 'Cumulative deaths density per 1M inhabitants', 'id': 'total_deaths_per_million', 'hideable': True, 'type':'numeric'}]
+    columns = [
+         {'name': 'Continent', 'id': 'continent',
+          'hideable': True, 'type': 'text'},
+         {'name': 'Country', 'id': 'location',
+          'hideable': True, 'type': 'text'},
+         {'name': 'Daily Cases', 'id': 'new_cases',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Daily Deaths', 'id': 'new_deaths',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Cumulative cases', 'id': 'total_cases',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Cumulative deaths', 'id': 'total_deaths',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Pct. change of cumulative cases', 'id': 'total_cases_change',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Pct. change of cumulative deaths', 'id': 'total_deaths_change',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Cumulative cases density per 1M inhabitants', 'id': 'total_cases_per_million',
+          'hideable': True, 'type': 'numeric'},
+         {'name': 'Cumulative deaths density per 1M inhabitants', 'id': 'total_deaths_per_million',
+          'hideable': True, 'type': 'numeric'}]
 
-  data=df.to_dict('records')
+    data=df.to_dict('records')
 
-  return {'columns':columns, 'data':data, 'df':df}
+    return {'columns':columns, 'data':data, 'df':df}
+
 
 def make_fig_map_weekly_europe():
-  df = read_weekly_ecdc()
+    df = read_weekly_ecdc()
 
-  return make_fig_map_weekly(df)
+    return make_fig_map_weekly(df)
+
 
 @app.callback(
     Output('figure-hospitalization', 'figure'),
     [Input('country-dropdown-3', 'value')])
 def make_fig_hospitalization(country):
-  df = read_hospitalization()
+    df = read_hospitalization()
 
-  return make_fig_hospitalization_base(df[df.country == country])
+    return make_fig_hospitalization_base(df[df.country == country])
+
 
 @app.callback(
     Output('figure-testing', 'figure'),
-    [Input('variable-dropdown-2', 'value'), Input('country-dropdown-testing', 'value')])
+    [Input('variable-dropdown-2', 'value'),
+     Input('country-dropdown-testing', 'value')])
 def make_fig_testing(variable, country):
-  df = filter_data(countries=country, start_date='2020-03-01')
+    df = filter_data(countries=country, start_date='2020-03-01')
 
-  return make_fig_testing_base(df, variable)
+    return make_fig_testing_base(df, variable)
+
 
 @app.callback(
     Output('figure-map-world', 'figure'),
     [Input('variable-dropdown', 'value')])
 def make_fig_map_world(variable):
-  df = filter_data(start_date='2020-06-01', threshold=1000)
+    df = filter_data(start_date='2020-06-01', threshold=1000)
 
-  return make_fig_map_base(df, variable)
+    return make_fig_map_base(df, variable)
+
 
 @app.callback(
     Output('figure-fit-1', 'figure'),
     [Input('country-dropdown-1', 'value')])
 def make_fig_fit(country):
-  df = filter_data(countries=[country], start_date='2020-05-01')
+    df = filter_data(countries=[country], start_date='2020-05-01')
 
-  return make_fig_fit_base(df)
+    return make_fig_fit_base(df)
+
 
 @app.callback(
     Output('figure-fit-2', 'figure'),
     [Input('country-dropdown-2', 'value')])
 def make_fig_fit(country):
-  df = filter_data(countries=[country], start_date='2020-05-01')
+    df = filter_data(countries=[country], start_date='2020-05-01')
 
-  return make_fig_fit_base(df)
+    return make_fig_fit_base(df)
 
 
 @app.callback(
     Output('figure-cumulative', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_cumulative_1(df):
-  '''Give as input a threshold for the cumulative cases in the most updated
-  timestep to filter out countries that do not have many cases.'''
-  df = pd.read_json(df, orient='split')
-  variable = "total_cases"
-  log_y = True
-  title = 'Confirmed cases evolution (log. scale, cumulative sum)'
+    '''Give as input a threshold for the cumulative cases in the most updated
+    timestep to filter out countries that do not have many cases.'''
+    df = pd.read_json(df, orient='split')
 
-  fig = px.line(df,
-                x="date",
-                y=variable,
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Pastel)
+    fig = timeseries_plot(df, time_variable="date",
+                          variable="total_cases", agg_variable="location",
+                          log_y=True,
+                          title='Confirmed cases evolution (log. scale, cumulative sum)')
 
-  fig.update_layout(
-    template='plotly_white',
-      legend_orientation="h",
-      width=800,
-      height=500,
-      title=title,
-      xaxis=dict(title=''),
-      yaxis=dict(title=''),
-      margin=dict(b=0, t=30, l=10),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
+    return fig
 
 
 @app.callback(
     Output('figure-cumulative-2', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_cumulative_2(df):
-  '''Give as input a threshold for the cumulative cases in the most updated
-  timestep to filter out countries that do not have many cases.'''
-  df = pd.read_json(df, orient='split')
+    '''Give as input a threshold for the cumulative cases in the most updated
+    timestep to filter out countries that do not have many cases.'''
+    df = pd.read_json(df, orient='split')
 
-  variable = "total_cases_per_million"
-  log_y = False
-  title = 'Density of cases (cumulative sum) per 1M inhabitants'
+    fig = timeseries_plot(df, time_variable="date",
+                          variable="total_cases_per_million", 
+                          agg_variable="location",
+                          log_y=False,
+                          title='Density of cases (cumulative sum) per 1M inhabitants')
 
-  fig = px.line(df,
-                x="date",
-                y=variable,
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Pastel)
-
-  fig.update_layout(
-    template='plotly_white',
-      legend_orientation="h",
-      margin=dict(b=0, t=30, l=10),
-      width=800,
-      height=500,
-      title=title,
-      xaxis=dict(title=''),
-      yaxis=dict(title=''),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
+    return fig
 
 
 @app.callback(
     Output('figure-cumulative-3', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_cumulative_3(df):
-  '''Give as input a threshold for the cumulative cases in the most updated
-  timestep to filter out countries that do not have many cases.'''
-  df = pd.read_json(df, orient='split')
+    '''Give as input a threshold for the cumulative cases in the most updated
+    timestep to filter out countries that do not have many cases.'''
+    df = pd.read_json(df, orient='split')
 
-  variable = "total_deaths"
-  log_y = True
-  title = 'Confirmed deaths evolution (log. scale, cumulative sum)'
+    fig = timeseries_plot(df, time_variable="date",
+                          variable="total_deaths", 
+                          agg_variable="location",
+                          log_y=True,
+                          title='Confirmed deaths evolution (log. scale, cumulative sum)')
 
-  fig = px.line(df,
-                x="date",
-                y=variable,
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                log_y=log_y,
-                color_discrete_sequence=px.colors.qualitative.Pastel)
+    return fig
 
-  fig.update_layout(
-    template='plotly_white',
-      margin=dict(b=0, t=30, l=10),
-      legend_orientation="h",
-      width=800,
-      height=500,
-      title=title,
-      xaxis=dict(title=''),
-      yaxis=dict(title=''),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
 
 @app.callback(
     Output('figure-cases', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_cases(df):
-  '''Give as input a threshold for the cumulative cases in the most updated
-  timestep to filter out countries that do not have many cases.'''
-  df = pd.read_json(df, orient='split')
+    '''Give as input a threshold for the cumulative cases in the most updated
+    timestep to filter out countries that do not have many cases.'''
+    df = pd.read_json(df, orient='split')
 
-  variable = "new_cases_smoothed"
-  title = '7-day smoothed Daily cases evolution'
+    fig = timeseries_plot(df, time_variable="date",
+                          variable="new_cases_smoothed",
+                          agg_variable="location",
+                          log_y=False,
+                          title='7-day smoothed Daily cases evolution')
 
-  fig = px.line(df,
-                x="date",
-                y=variable,
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                color_discrete_sequence=px.colors.qualitative.Pastel)
-
-  fig.update_layout(
-    template='plotly_white',
-      margin=dict(b=0, t=30, l=10),
-      legend_orientation="h",
-      width=800,
-      height=500,
-      title=title,
-      xaxis=dict(title=''),
-      yaxis=dict(title=''),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
+    return fig
 
 
 @app.callback(
     Output('figure-increment', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_increment(df):
-  df = pd.read_json(df, orient='split')
-  variable = "total_cases_change"
-  title = '7-day smoothed daily increase in confirmed cases'
+    df = pd.read_json(df, orient='split')
 
-  fig = px.line(df,
-                x="date",
-                y=variable,
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                width=800,
-                height=500,
-                title=title,
-                color_discrete_sequence=px.colors.qualitative.Pastel)
+    fig = timeseries_plot(df, time_variable="date",
+                          variable="total_cases_change",
+                          agg_variable="location",
+                          log_y=False,
+                          title='7-day smoothed daily increase in confirmed cases')
 
-  fig.update_layout(
-    template='plotly_white',
-      margin=dict(b=0, t=30, l=10),
-      legend_orientation="h",
-      yaxis=dict(range=[0, 60], title=' % '),
-      xaxis=dict(title=''),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
+    return fig
 
 
 @app.callback(
     Output('figure-r0', 'figure'),
     [Input('intermediate-value', 'children')])
 def make_fig_r0(df):
-  df = pd.read_json(df, orient='split')
-  title = 'Reproductivity ratio r0 (estimated using RKI method)'
+    df = pd.read_json(df, orient='split')
 
-  r0 = df.groupby("location").apply(compute_r0).reset_index(
-      level="location").drop(columns="location")
+    r0 = df.groupby("location").apply(compute_r0).reset_index(
+        level="location").drop(columns="location")
+    final = df.merge(r0, right_index=True, left_index=True, how='outer')
 
-  final = df.merge(r0, right_index=True, left_index=True, how='outer')
+    fig = timeseries_plot(final, time_variable="date",
+                          variable="r0",
+                          agg_variable="location",
+                          log_y=False,
+                          title='Reproductivity ratio r0 (estimated using RKI method)')
 
-  fig = px.line(final,
-                x="date",
-                y='r0',
-                color="location",
-                hover_name="location",
-                line_shape="spline",
-                render_mode="svg",
-                width=800,
-                height=500,
-                title=title,
-                color_discrete_sequence=px.colors.qualitative.Pastel)
-
-  fig.update_layout(
-    template='plotly_white',
-      margin=dict(b=0, t=30, l=10),
-      legend_orientation="h",
-      yaxis=dict(range=[0, 5], title=''),
-      xaxis=dict(title=''),
-      legend=dict(
-          title=dict(text=''),
-          font=dict(
-              size=10,
-          )
-      )
-  )
-
-  return fig
+    return fig
 
 
 if __name__ == '__main__':
