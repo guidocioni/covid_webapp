@@ -10,7 +10,8 @@ from datetime import datetime
 from utils import *
 from meta import tags
 from tabs import get_aggregated_tab, get_testing_tab,\
-                 get_forecast_tab, get_maps_tab, get_table_tab
+                 get_forecast_tab, get_maps_tab, get_table_tab,\
+                 get_aggregated_eu_tab
 from datetime import date
 
 
@@ -42,6 +43,22 @@ def read_owid():
 
     return df.reset_index()
 
+
+@cache.memoize(timeout=TIMEOUT)
+def read_jrc():
+    '''Reader from JRC, regional data for EU'''
+    df = pd.read_csv("https://raw.githubusercontent.com/ec-jrc/COVID-19/master/data-by-region/jrc-covid-19-all-days-by-regions.csv",
+                     parse_dates=[0], 
+                     index_col=[0])
+    df = df.sort_index().reset_index()
+
+    df['daily_cases'] = df.groupby("Region")['CumulativePositive'].diff().rolling(7).mean()
+    df['daily_deaths'] = df.groupby("Region")['CumulativeDeceased'].diff().rolling(7).mean()
+    df['daily_recovered'] = df.groupby("Region")['CumulativeRecovered'].diff().rolling(7).mean()
+    
+    df['location'] = df['CountryName'] + ' | ' + df['Region']
+
+    return df
 
 @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
@@ -115,53 +132,63 @@ def filter_data_for_countries(country, date_value):
 
 
 def serve_layout():
-  dropdown_options = []
-  countries_list = list(filter_data().location.unique())
-  for cnt in countries_list:
-    dropdown_options.append({"label": cnt, "value": cnt})
+    dropdown_options = []
+    countries_list = list(filter_data().location.unique())
+    for cnt in countries_list:
+        dropdown_options.append({"label": cnt, "value": cnt})
 
-  dropdown_options_2 = []
-  countries_list_2 = list(read_hospitalization().country.unique())
-  for cnt in countries_list_2:
-    dropdown_options_2.append({"label": cnt, "value": cnt})
+    dropdown_options_2 = []
+    countries_list_2 = list(read_hospitalization().country.unique())
+    for cnt in countries_list_2:
+        dropdown_options_2.append({"label": cnt, "value": cnt})
 
-  return html.Div(children=[
-      html.Div(html.H1('COVID-19 Monitoring')),
-      html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
-      html.Div('Last Update: %s' % str(filter_data().date.max())),
-      #
-      dcc.Tabs(parent_className='custom-tabs', 
-               className='custom-tabs-container',
-               children=[
-                    dcc.Tab(label='Aggregated data',
-                            className='custom-tab',
-                            selected_className='custom-tab--selected',
-                            children=get_aggregated_tab(dropdown_options)),
-                    # -----------------------------------------------------  #
-                    dcc.Tab(label='Testing & Hospitalization',
-                            className='custom-tab',
-                            selected_className='custom-tab--selected',
-                            children=get_testing_tab(dropdown_options, dropdown_options_2)),
-                    # -----------------------------------------------------  #
-                    dcc.Tab(label='Forecast (logistic)',
-                            className='custom-tab',
-                            selected_className='custom-tab--selected',
-                            children=get_forecast_tab(dropdown_options)),
-                    # -----------------------------------------------------  #
-                    dcc.Tab(label='Maps',
-                            className='custom-tab',
-                            selected_className='custom-tab--selected',
-                            children=get_maps_tab(make_fig_map_weekly_europe())),
-                    # -----------------------------------------------------  #
-                    dcc.Tab(label='Tables (daily data)',
-                            className='custom-tab',
-                            selected_className='custom-tab--selected',
-                            children=get_table_tab(make_table_data()))
-                    # -----------------------------------------------------  #
-                        ]),
-      html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
-  ],
-  style={'width': '100%', 'display': 'inline-block'})
+    region_eu = []
+    region_eu_list = list(read_jrc().location.unique())
+    for cnt in region_eu_list:
+        region_eu.append({"label": cnt, "value": cnt})
+
+    return html.Div(children=[
+          html.Div(html.H1('COVID-19 Monitoring')),
+          html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
+          html.Div('Last Update: %s' % str(filter_data().date.max())),
+          #
+          dcc.Tabs(parent_className='custom-tabs', 
+                   className='custom-tabs-container',
+                   children=[
+                        dcc.Tab(label='Aggregated data',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_aggregated_tab(dropdown_options)),
+                        # -----------------------------------------------------  #
+                        dcc.Tab(label='Aggregated data (EU by regions)',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_aggregated_eu_tab(region_eu)),
+                        # -----------------------------------------------------  #
+                        dcc.Tab(label='Testing & Hospitalization',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_testing_tab(dropdown_options, dropdown_options_2)),
+                        # -----------------------------------------------------  #
+                        dcc.Tab(label='Forecast (logistic)',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_forecast_tab(dropdown_options)),
+                        # -----------------------------------------------------  #
+                        dcc.Tab(label='Maps',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_maps_tab(make_fig_map_weekly_europe())),
+                        # -----------------------------------------------------  #
+                        dcc.Tab(label='Tables (daily data)',
+                                className='custom-tab',
+                                selected_className='custom-tab--selected',
+                                children=get_table_tab(make_table_data()))
+                        # -----------------------------------------------------  #
+                            ]),
+          html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
+    ],
+    style={'width': '100%', 'display': 'inline-block'})
 
 
 app.layout = serve_layout
@@ -188,12 +215,55 @@ def make_fig_map_weekly_europe():
 
 
 @app.callback(
+    Output('figure-eu', 'figure'),
+    [Input('region-dropdown-eu', 'value'), Input('variable-dropdown-eu', 'value')])
+def make_fig_eu(regions, variable):
+    '''Give as input a threshold for the cumulative cases in the most updated
+    timestep to filter out countries that do not have many cases.'''
+    df = read_jrc()
+    df = df.loc[df.location.isin(regions)]
+
+    fig = timeseries_plot(df, 
+                          time_variable="Date",
+                          variable=variable,
+                          agg_variable="location",
+                          log_y=False,
+                          title='')
+
+    return fig
+
+
+@app.callback(
+    Output('figure-hospitalization-eu', 'figure'),
+    [Input('region-dropdown-eu-2', 'value')])
+def make_fig_hospitalization_eu(region):
+    df = read_jrc()
+    df = df.loc[df.location == region]
+
+    df = df[['location', 'Date', 'IntensiveCare', 'Hospitalized']]\
+             .set_index(['location', 'Date'])\
+             .stack().reset_index()\
+             .rename(columns={'level_2': 'indicator', 0: 'value'})
+
+    return make_fig_hospitalization_base(df,
+                                         "Date",
+                                         "value",
+                                         "indicator",
+                                         "location")
+
+
+
+@app.callback(
     Output('figure-hospitalization', 'figure'),
     [Input('country-dropdown-3', 'value')])
 def make_fig_hospitalization(country):
     df = read_hospitalization()
 
-    return make_fig_hospitalization_base(df[df.country == country])
+    return make_fig_hospitalization_base(df[df.country == country],
+                                         "date",
+                                         "value",
+                                         "indicator",
+                                         "country")
 
 
 @app.callback(

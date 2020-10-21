@@ -1,4 +1,4 @@
-from utils import threshold_chosen, variable_options_2, variable_options
+from utils import threshold_chosen, variable_options_2, variable_options, variable_options_eu
 import dash_html_components as html
 import dash_core_components as dcc
 import dash_table
@@ -17,7 +17,7 @@ def get_aggregated_tab(dropdown_options):
                                 options=dropdown_options,
                                 value=['Germany', 'Italy', 'France',
                                        'Spain', 'Portugal'],
-                                multi=True, style={'width': '800px' , 'padding': '4px'}),
+                                multi=True, style={'width': '800px' , 'padding': '2px'}),
                   html.Div(['Start date:  ',
                   dcc.DatePickerSingle(
                                       id='date-picker-single',
@@ -26,7 +26,7 @@ def get_aggregated_tab(dropdown_options):
                                       date='2020-04-01',
                                       display_format='DD MMM YYYY',
                                       placeholder='Starting date', 
-                                      style={'padding': '4px'})
+                                      style={'padding': '2px'})
                     ]),
 ]),
               html.Div(id='intermediate-value', style={'display': 'none'}),
@@ -61,6 +61,41 @@ def get_aggregated_tab(dropdown_options):
                       style={'width': '800'}
                   ), style={'display': 'inline-block', 'padding': 10}),
           ]
+
+
+def get_aggregated_eu_tab(region_options):
+    return [  
+            html.Div(
+                  [
+                    dcc.Dropdown(
+                        id='region-dropdown-eu',
+                        options=region_options,
+                        value=['Italy | Lombardia', 'Italy | Toscana'],
+                        multi=True, style={'width': '800px', 'padding':'2px'}),
+                    dcc.Dropdown(
+                        id='variable-dropdown-eu',
+                        options=variable_options_eu,
+                        value='CurrentlyPositive',
+                        multi=False, style={'width': '800px', 'padding':'2px'}),
+                    dcc.Graph(
+                        id='figure-eu',
+                        style={'width': '800'}
+                  )
+                  ], 
+                  style={'display': 'inline-block', 'padding': 10}),
+             html.Div(
+              [
+                dcc.Dropdown(
+                        id='region-dropdown-eu-2',
+                        options=region_options,
+                        value='Italy | Lombardia',
+                        multi=False, style={'width': '800px'}),
+                dcc.Graph(
+                        id='figure-hospitalization-eu',
+                        style={'width': '800'}
+                  )
+              ], style={'display': 'inline-block', 'padding': 10})
+                  ]
 
 def get_testing_tab(dropdown_options, dropdown_options_2):
     return [

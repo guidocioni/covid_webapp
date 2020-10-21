@@ -51,6 +51,17 @@ variable_options_2 = [
     'label': 'The share of COVID-19 tests that are positive'}
 ]
 
+variable_options_eu = [
+    {'value': 'CumulativePositive', 'label': 'Total positive'},
+    {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
+    {'value': 'CumulativeRecovered','label': 'Total recovered'},
+    {'value': 'CurrentlyPositive',  'label': 'Currently positive'},
+    {'value': 'daily_cases',  'label': 'Daily positive'},
+    {'value': 'daily_deaths',  'label': 'Daily deceased'},
+    {'value': 'daily_recovered',  'label': 'Daily recovered'},
+    {'value': 'CurrentlyPositive',  'label': 'Currently positive'}
+]
+
 table_columns = [
      {'name': 'Continent', 'id': 'continent',
       'hideable': True, 'type': 'text'},
@@ -405,12 +416,12 @@ def make_fig_testing_base(df, variable):
     return fig
 
 
-def make_fig_hospitalization_base(df):
+def make_fig_hospitalization_base(df, time_variable, value_variable, color_variable, hover_variable):
     fig = px.bar(df,
-                 x="date",
-                 y="value",
-                 color="indicator",
-                 hover_name="country",
+                 x=time_variable,
+                 y=value_variable,
+                 color=color_variable,
+                 hover_name=hover_variable,
                  color_discrete_sequence=px.colors.qualitative.Pastel)
 
     apply_base_layout(fig, title='')
