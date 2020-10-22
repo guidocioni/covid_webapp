@@ -2,17 +2,12 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from flask_caching import Cache
-import requests
-from bs4 import BeautifulSoup
-import re
-from datetime import datetime
+# from flask_caching import Cache
 from utils import *
 from meta import tags
 from tabs import get_aggregated_tab, get_testing_tab,\
-                 get_forecast_tab, get_maps_tab, get_table_tab,\
-                 get_aggregated_eu_tab
-from datetime import date
+    get_forecast_tab, get_maps_tab, get_table_tab,\
+    get_aggregated_eu_tab
 
 app = dash.Dash(__name__,
                 external_stylesheets=external_stylesheets,
@@ -22,31 +17,31 @@ app = dash.Dash(__name__,
 server = app.server
 app.title = 'COVID-19 live forecast'
 
-cache = Cache(server, config={
-    'CACHE_TYPE': 'filesystem',
-    'CACHE_DIR': '/tmp'
-})
+# cache = Cache(server, config={
+#     'CACHE_TYPE': 'filesystem',
+#     'CACHE_DIR': '/tmp'
+# })
 TMP_FOLDER='/tmp/'
 
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_owid():
-    return pd.read_pickle(TMP_FOLDER+'df_owid.pickle')
+    return pd.read_pickle(TMP_FOLDER + 'df_owid.pickle')
 
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_jrc():
-    return pd.read_pickle(TMP_FOLDER+'df_jrc.pickle')
+    return pd.read_pickle(TMP_FOLDER + 'df_jrc.pickle')
 
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
-    return pd.read_pickle(TMP_FOLDER+'df_weekly_ecdc.pickle')
+    return pd.read_pickle(TMP_FOLDER + 'df_weekly_ecdc.pickle')
 
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
-    return pd.read_pickle(TMP_FOLDER+'df_hospitalization.pickle')
+    return pd.read_pickle(TMP_FOLDER + 'df_hospitalization.pickle')
 
 
 def filter_data(countries=None, start_date=None, threshold=None):
@@ -69,7 +64,8 @@ def filter_data(countries=None, start_date=None, threshold=None):
 
     if (not countries) and threshold:
         latest = df[df.date == df.date.max()]
-        countries_filter = latest[latest.total_cases > threshold].location.unique()
+        countries_filter = latest[latest.total_cases >
+                                  threshold].location.unique()
         df = df[df.location.isin(list(countries_filter))]
 
     return df
@@ -105,47 +101,47 @@ def serve_layout():
         region_eu.append({"label": cnt, "value": cnt})
 
     return html.Div(children=[
-          html.Div(html.H1('COVID-19 Monitoring')),
-          html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
-          html.Div('Last Update: %s' % str(filter_data().date.max())),
-          #
-          dcc.Tabs(parent_className='custom-tabs', 
-                   className='custom-tabs-container',
-                   children=[
-                        dcc.Tab(label='Aggregated data',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_aggregated_tab(dropdown_options)),
-                        # -----------------------------------------------------  #
-                        dcc.Tab(label='Aggregated data (EU by regions)',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_aggregated_eu_tab(region_eu)),
-                        # -----------------------------------------------------  #
-                        dcc.Tab(label='Testing & Hospitalization',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_testing_tab(dropdown_options, dropdown_options_2)),
-                        # -----------------------------------------------------  #
-                        dcc.Tab(label='Forecast (logistic)',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_forecast_tab(dropdown_options)),
-                        # -----------------------------------------------------  #
-                        dcc.Tab(label='Maps',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_maps_tab(make_fig_map_weekly_europe())),
-                        # -----------------------------------------------------  #
-                        dcc.Tab(label='Tables (daily data)',
-                                className='custom-tab',
-                                selected_className='custom-tab--selected',
-                                children=get_table_tab(make_table_data()))
-                        # -----------------------------------------------------  #
-                            ]),
-          html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
+        html.Div(html.H1('COVID-19 Monitoring')),
+        html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
+        html.Div('Last Update: %s' % str(filter_data().date.max())),
+        #
+        dcc.Tabs(parent_className='custom-tabs',
+                 className='custom-tabs-container',
+                 children=[
+                     dcc.Tab(label='Aggregated data',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_aggregated_tab(dropdown_options)),
+                     # -----------------------------------------------------  #
+                     dcc.Tab(label='Aggregated data (EU by regions)',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_aggregated_eu_tab(region_eu)),
+                     # -----------------------------------------------------  #
+                     dcc.Tab(label='Testing & Hospitalization',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_testing_tab(dropdown_options, dropdown_options_2)),
+                     # -----------------------------------------------------  #
+                     dcc.Tab(label='Forecast (logistic)',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_forecast_tab(dropdown_options)),
+                     # -----------------------------------------------------  #
+                     dcc.Tab(label='Maps',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_maps_tab(make_fig_map_weekly_europe())),
+                     # -----------------------------------------------------  #
+                     dcc.Tab(label='Tables (daily data)',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_table_tab(make_table_data()))
+                     # -----------------------------------------------------  #
+                 ]),
+        html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
     ],
-    style={'width': '100%', 'display': 'inline-block'})
+        style={'width': '100%', 'display': 'inline-block'})
 
 
 app.layout = serve_layout
@@ -155,8 +151,8 @@ def make_table_data():
     df = filter_data(start_date='2020-03-15',
                      threshold=1000)
     df = df.loc[df.date == df.date.max()]\
-            .round(3).sort_values(by="total_cases_change",
-                                  ascending=False)
+        .round(3).sort_values(by="total_cases_change",
+                              ascending=False)
 
     data = df.to_dict('records')
 
@@ -180,7 +176,7 @@ def make_fig_eu(regions, variable):
     df = read_jrc()
     df = df.loc[df.location.isin(regions)]
 
-    fig = timeseries_plot(df, 
+    fig = timeseries_plot(df,
                           time_variable="Date",
                           variable=variable,
                           agg_variable="location",
@@ -198,16 +194,15 @@ def make_fig_hospitalization_eu(region):
     df = df.loc[df.location == region]
 
     df = df[['location', 'Date', 'IntensiveCare', 'Hospitalized']]\
-             .set_index(['location', 'Date'])\
-             .stack().reset_index()\
-             .rename(columns={'level_2': 'indicator', 0: 'value'})
+        .set_index(['location', 'Date'])\
+        .stack().reset_index()\
+        .rename(columns={'level_2': 'indicator', 0: 'value'})
 
     return make_fig_hospitalization_base(df,
                                          "Date",
                                          "value",
                                          "indicator",
                                          "location")
-
 
 
 @app.callback(
@@ -286,7 +281,7 @@ def make_fig_cumulative_2(df):
     df = pd.read_json(df, orient='split')
 
     fig = timeseries_plot(df, time_variable="date",
-                          variable="total_cases_per_million", 
+                          variable="total_cases_per_million",
                           agg_variable="location",
                           log_y=False,
                           title='Density of cases (cumulative sum) per 1M inhabitants')
@@ -303,7 +298,7 @@ def make_fig_cumulative_3(df):
     df = pd.read_json(df, orient='split')
 
     fig = timeseries_plot(df, time_variable="date",
-                          variable="total_deaths", 
+                          variable="total_deaths",
                           agg_variable="location",
                           log_y=True,
                           title='Confirmed deaths evolution (log. scale, cumulative sum)')
@@ -361,4 +356,4 @@ def make_fig_r0(df):
 
 
 if __name__ == '__main__':
-  app.run_server()
+    app.run_server()
