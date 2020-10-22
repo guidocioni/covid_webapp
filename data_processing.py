@@ -13,6 +13,7 @@ The results are saved in pickle files which are then loded with the same name in
 You can run this script every 2 hours, but even less, with cron 
 0 */2 * * * /usr/bin/python3 /home/covid_webapp/data_processing.py'''
 
+
 def read_owid():
     '''Reader from OWID which should be a reliable source for many data.'''
     df = pd.read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
@@ -21,13 +22,15 @@ def read_owid():
 
     df = df.sort_index()
 
-    df['total_cases_change'] = df.groupby(
-        "location")['total_cases'].pct_change().rolling(7).mean() * 100.
-    df['total_deaths_change'] = df.groupby(
-        "location")['total_deaths'].pct_change().rolling(7).mean() * 100.
+    df['total_cases_change'] = df.groupby("location")[
+        "new_cases_smoothed_per_million"].transform(lambda x: x.diff().rolling(3).mean())
+    df['total_deaths_change'] = df.groupby("location")[
+        "new_deaths_smoothed_per_million"].transform(lambda x: x.diff().rolling(3).mean())
     df['positive_rate'] = df['positive_rate'] * 100.
 
     df['r0'] = df.groupby("location").new_cases.transform(compute_r0)
+
+    df = df.replace([np.inf, -np.inf], np.nan)
 
     return df.reset_index()
 
@@ -47,31 +50,37 @@ def read_jrc():
     df['daily_recovered'] = df.groupby(
         "Region")['CumulativeRecovered'].transform(lambda x: x.diff())
     df['daily_cases_smoothed'] = df.groupby(
-        "Region")['CumulativePositive'].transform(lambda x: x.diff().rolling(7).mean())
+        "Region")['daily_cases'].transform(lambda x: x.rolling(7).mean())
     df['daily_deaths_smoothed'] = df.groupby(
-        "Region")['CumulativeDeceased'].transform(lambda x: x.diff().rolling(7).mean())
+        "Region")['daily_deaths'].transform(lambda x: x.rolling(7).mean())
     df['daily_recovered_smoothed'] = df.groupby(
-        "Region")['CumulativeRecovered'].transform(lambda x: x.diff().rolling(7).mean())
+        "Region")['daily_recovered'].transform(lambda x: x.rolling(7).mean())
+    df['total_cases_change'] = df.groupby("Region")[
+        "daily_cases_smoothed"].transform(lambda x: x.diff().rolling(3).mean())
+    df['total_deaths_change'] = df.groupby("Region")[
+        "daily_deaths_smoothed"].transform(lambda x: x.diff().rolling(3).mean())
 
     df['location'] = df['CountryName'] + ' | ' + df['Region']
 
     df['r0'] = df.groupby("location").daily_cases.transform(compute_r0)
 
+    df = df.replace([np.inf, -np.inf], np.nan)
+
     return df.reset_index()
 
 
-def read_weekly_ecdc():
-    r = requests.get(
-        'https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
-    soup = BeautifulSoup(r.text, features="lxml")
-    file_url = soup.findAll('a',
-                            string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19",
-                            href=re.compile(".xls"))[0]['href']
+# def read_weekly_ecdc():
+#     r = requests.get(
+#         'https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
+#     soup = BeautifulSoup(r.text, features="lxml")
+#     file_url = soup.findAll('a',
+#                             string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19",
+#                             href=re.compile(".xls"))[0]['href']
 
-    df = pd.read_excel(file_url)
+#     df = pd.read_excel(file_url)
 
-    # Only return last week otherwise it takes too long to make the picture
-    return df[df.year_week == df.year_week.max()]
+#     # Only return last week otherwise it takes too long to make the picture
+#     return df[df.year_week == df.year_week.max()]
 
 
 def read_hospitalization():
@@ -95,7 +104,7 @@ def read_hospitalization():
 
 df_owid = read_owid().to_pickle(TMP_FOLDER + 'df_owid.pickle')
 df_jrc = read_jrc().to_pickle(TMP_FOLDER + 'df_jrc.pickle')
-df_weekly_ecdc = read_weekly_ecdc().to_pickle(
-    TMP_FOLDER + 'df_weekly_ecdc.pickle')
+# df_weekly_ecdc = read_weekly_ecdc().to_pickle(
+#     TMP_FOLDER + 'df_weekly_ecdc.pickle')
 df_hospitalization = read_hospitalization().to_pickle(
     TMP_FOLDER + 'df_hospitalization.pickle')

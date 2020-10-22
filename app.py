@@ -33,12 +33,6 @@ def read_owid():
 def read_jrc():
     return pd.read_pickle(TMP_FOLDER + 'df_jrc.pickle')
 
-
-# @cache.memoize(timeout=TIMEOUT)
-def read_weekly_ecdc():
-    return pd.read_pickle(TMP_FOLDER + 'df_weekly_ecdc.pickle')
-
-
 # @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
     return pd.read_pickle(TMP_FOLDER + 'df_hospitalization.pickle')
@@ -131,7 +125,7 @@ def serve_layout():
                      dcc.Tab(label='Maps',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
-                             children=get_maps_tab(make_fig_map_weekly_europe())),
+                             children=get_maps_tab()),
                      # -----------------------------------------------------  #
                      dcc.Tab(label='Tables (daily data)',
                              className='custom-tab',
@@ -161,10 +155,13 @@ def make_table_data():
             'df': df}
 
 
-def make_fig_map_weekly_europe():
-    df = read_weekly_ecdc()
+@app.callback(
+    Output('figure-map-eu', 'figure'),
+    [Input('variable-dropdown-map-eu', 'value')])
+def make_fig_map_weekly_europe(variable):
+    df = read_jrc()
 
-    return make_fig_map_weekly(df)
+    return make_fig_map_weekly(df, variable)
 
 
 @app.callback(

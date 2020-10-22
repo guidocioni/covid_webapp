@@ -75,7 +75,7 @@ def get_aggregated_eu_tab(region_options):
                     dcc.Dropdown(
                         id='variable-dropdown-eu',
                         options=variable_options_eu,
-                        value='CurrentlyPositive',
+                        value='total_cases_change',
                         multi=False, style={'width': '800px', 'padding':'2px'}),
                     dcc.Graph(
                         id='figure-eu',
@@ -103,11 +103,11 @@ def get_aggregated_eu_tab(region_options):
 
 def get_testing_tab(dropdown_options, dropdown_options_2):
     return [
-            html.Div(['Testing data is weekly. Here is an explanation of the parameters: ',
-                  html.Ul(children=[
-                                    html.Li('positivity rate - 100 x Number of new confirmed cases/number of tests'),
-                                    html.Li('tests done - total tests performed in a specific country'),
-                                    html.Li('testing rate - Testing rate per 100 000 population')])]),
+            # html.Div(['Testing data is weekly. Here is an explanation of the parameters: ',
+            #       html.Ul(children=[
+            #                         html.Li('positivity rate - 100 x Number of new confirmed cases/number of tests'),
+            #                         html.Li('tests done - total tests performed in a specific country'),
+            #                         html.Li('testing rate - Testing rate per 100 000 population')])]),
             html.Div('Hospitalization data are either weekly or daily depending on the country selected in the dropdown'),
             html.Div(
                   [
@@ -177,11 +177,11 @@ def get_forecast_tab(dropdown_options):
                   style={'display': 'inline-block', 'padding': 10})
           ]
 
-def get_maps_tab(figure):
+def get_maps_tab():
     return [
             html.Div('Shown is the geographical distribution of many variables. \
               In the first plot you can select the variable to be plotted and explore the daily variation using the slider.\
-              In the second plot the subnational distribution of the 14 days reporting ratio is shown only for the most recent data: it is updated every week.'),
+              In the second plot only the most recent data for every region in Europe is shown.'),
             html.Div([
                   dcc.Dropdown(
                       id='variable-dropdown',
@@ -192,12 +192,16 @@ def get_maps_tab(figure):
                       style={'width': '800'}
                   )],
                   style={'display': 'inline-block', 'padding': 10}),
-            html.Div(
-                  dcc.Graph(
-                      figure=figure,
-                      style={'width': '800'}
-                  ),
-                  style={'display': 'inline-block', 'padding-bottom': 50}),
+            html.Div([
+                      dcc.Dropdown(
+                              id='variable-dropdown-map-eu',
+                              options=variable_options_eu,
+                              value="total_cases_change"),
+                      dcc.Graph(
+                          id='figure-map-eu',
+                          style={'width': '800', 'padding-bottom': '10px'}),
+                      ],
+                  style={'display': 'inline-block'}),
           ]
 
 def get_table_tab(table_data):
