@@ -28,17 +28,21 @@ cache = Cache(server, config={
 })
 TMP_FOLDER='/tmp/'
 
+
 # @cache.memoize(timeout=TIMEOUT)
 def read_owid():
     return pd.read_pickle(TMP_FOLDER+'df_owid.pickle')
+
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_jrc():
     return pd.read_pickle(TMP_FOLDER+'df_jrc.pickle')
 
+
 # @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
     return pd.read_pickle(TMP_FOLDER+'df_weekly_ecdc.pickle')
+
 
 # @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
@@ -79,13 +83,8 @@ def get_countries_list(df, country_variable):
     Output('intermediate-value', 'children'),
     [Input('country-dropdown-multi', 'value'), Input('date-picker-single', 'date')])
 def filter_data_for_countries(country, date_value):
-    if date_value is not None:
-        date_object = date.fromisoformat(date_value)
-        date_string = date_object.strftime('%Y-%m-%d')
-    else:
-        date_string = '2020-04-01'
     return filter_data(countries=country,
-                       start_date=date_string,
+                       start_date=date_value,
                        threshold=threshold_chosen).to_json(date_format='iso', orient='split')
 
 
