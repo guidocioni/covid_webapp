@@ -79,9 +79,13 @@ def get_aggregated_eu_tab(region_options):
                         multi=False, style={'width': '800px', 'padding':'2px'}),
                     dcc.Graph(
                         id='figure-eu',
-                        style={'width': '800'}
-                  )
+                        style={'width': '800'}),
                   ], 
+                  style={'display': 'inline-block', 'padding': 10}),
+             html.Div(
+                      dcc.Graph(
+                                id='figure-r0-eu',
+                                style={'width': '800'}),
                   style={'display': 'inline-block', 'padding': 10}),
              html.Div(
               [

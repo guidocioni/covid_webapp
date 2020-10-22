@@ -181,10 +181,27 @@ def make_fig_eu(regions, variable):
                           variable=variable,
                           agg_variable="location",
                           log_y=False,
-                          title='')
+                          title="")
 
     return fig
 
+@app.callback(
+    Output('figure-r0-eu', 'figure'),
+    [Input('region-dropdown-eu', 'value')])
+def make_fig_r0_eu(regions):
+    df = read_jrc()
+    df = df.loc[df.location.isin(regions)]
+
+    fig = timeseries_plot(df,
+                          time_variable="Date",
+                          variable="r0",
+                          agg_variable="location",
+                          log_y=False,
+                          title='Reproductivity ratio r0 (estimated using RKI method)')
+
+    fig.update_yaxes(range=[0, 5])
+
+    return fig
 
 @app.callback(
     Output('figure-hospitalization-eu', 'figure'),
@@ -353,7 +370,6 @@ def make_fig_r0(df):
                           title='Reproductivity ratio r0 (estimated using RKI method)')
 
     return fig
-
 
 if __name__ == '__main__':
     app.run_server()
