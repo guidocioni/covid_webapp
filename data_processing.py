@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
+import numpy as np
 
 TMP_FOLDER = '/tmp/'
 
@@ -84,16 +85,10 @@ def read_jrc():
 
 
 def read_hospitalization():
-    r = requests.get(
-        'https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19')
-    soup = BeautifulSoup(r.text, features="lxml")
-    file_url = soup.findAll('a',
-                            string="Download data on hospital and ICU admission rates and current occupancy for COVID-19",
-                            href=re.compile("xls"))[0]['href']
-
     def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
-    df = pd.read_excel(file_url, parse_dates=[3], date_parser=dateparse).drop(
-        columns=['source', 'url'])
+    df = pd.read_csv('https://opendata.ecdc.europa.eu/covid19/hospitalicuadmissionrates/csv/data.csv',
+                         parse_dates=[3], date_parser=dateparse).drop(
+                                    columns=['source', 'url'])
     df['date'] = pd.to_datetime(df['date'])
     # fill the date with monday
     df.loc[df.indicator.str.contains(
@@ -101,10 +96,20 @@ def read_hospitalization():
 
     return df
 
+try:
+    df_owid = read_owid().to_pickle(TMP_FOLDER + 'df_owid.pickle')
+except:
+    print("Error in downloading/processing df_owid")
 
-df_owid = read_owid().to_pickle(TMP_FOLDER + 'df_owid.pickle')
-df_jrc = read_jrc().to_pickle(TMP_FOLDER + 'df_jrc.pickle')
+try:
+    df_jrc = read_jrc().to_pickle(TMP_FOLDER + 'df_jrc.pickle')
+except:
+    print("Error in downloading/processing df_jrc")
+
 # df_weekly_ecdc = read_weekly_ecdc().to_pickle(
 #     TMP_FOLDER + 'df_weekly_ecdc.pickle')
-df_hospitalization = read_hospitalization().to_pickle(
-    TMP_FOLDER + 'df_hospitalization.pickle')
+try:
+    df_hospitalization = read_hospitalization().to_pickle(
+        TMP_FOLDER + 'df_hospitalization.pickle')
+except:
+    print("Error in downloading/processing df_hospitalization")
