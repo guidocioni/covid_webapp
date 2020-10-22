@@ -14,7 +14,6 @@ from tabs import get_aggregated_tab, get_testing_tab,\
                  get_aggregated_eu_tab
 from datetime import date
 
-
 app = dash.Dash(__name__,
                 external_stylesheets=external_stylesheets,
                 meta_tags=tags,
@@ -27,68 +26,23 @@ cache = Cache(server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': '/tmp'
 })
+TMP_FOLDER='/tmp/'
 
-
-@cache.memoize(timeout=TIMEOUT)
+# @cache.memoize(timeout=TIMEOUT)
 def read_owid():
-    '''Reader from OWID which should be a reliable source for many data.'''
-    df = pd.read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
-                     parse_dates=[3], 
-                     index_col=[3])
-    df = df.sort_index()
+    return pd.read_pickle(TMP_FOLDER+'df_owid.pickle')
 
-    df['total_cases_change'] = df.groupby("location")['total_cases'].pct_change().rolling(7).mean() * 100.
-    df['total_deaths_change'] = df.groupby("location")['total_deaths'].pct_change().rolling(7).mean() * 100.
-    df['positive_rate'] = df['positive_rate'] * 100.
-
-    return df.reset_index()
-
-
-@cache.memoize(timeout=TIMEOUT)
+# @cache.memoize(timeout=TIMEOUT)
 def read_jrc():
-    '''Reader from JRC, regional data for EU'''
-    df = pd.read_csv("https://raw.githubusercontent.com/ec-jrc/COVID-19/master/data-by-region/jrc-covid-19-all-days-by-regions.csv",
-                     parse_dates=[0], 
-                     index_col=[0])
-    df = df.sort_index().reset_index()
+    return pd.read_pickle(TMP_FOLDER+'df_jrc.pickle')
 
-    df['daily_cases'] = df.groupby("Region")['CumulativePositive'].diff().rolling(7).mean()
-    df['daily_deaths'] = df.groupby("Region")['CumulativeDeceased'].diff().rolling(7).mean()
-    df['daily_recovered'] = df.groupby("Region")['CumulativeRecovered'].diff().rolling(7).mean()
-    
-    df['location'] = df['CountryName'] + ' | ' + df['Region']
-
-    return df
-
-@cache.memoize(timeout=TIMEOUT)
+# @cache.memoize(timeout=TIMEOUT)
 def read_weekly_ecdc():
-    r = requests.get('https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
-    soup = BeautifulSoup(r.text, features="lxml")
-    file_url = soup.findAll('a',
-      string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19",
-      href=re.compile(".xls"))[0]['href']
+    return pd.read_pickle(TMP_FOLDER+'df_weekly_ecdc.pickle')
 
-    df = pd.read_excel(file_url)
-
-    # Only return last week otherwise it takes too long to make the picture
-    return df[df.year_week == df.year_week.max()]
-
-
-@cache.memoize(timeout=TIMEOUT)
+# @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
-    r = requests.get('https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19')
-    soup = BeautifulSoup(r.text, features="lxml")
-    file_url = soup.findAll('a',
-        string="Download data on hospital and ICU admission rates and current occupancy for COVID-19",
-        href=re.compile("xls"))[0]['href']
-
-    def dateparse(x): return datetime.strptime(x + '-1', "%Y-W%W-%w")
-    df = pd.read_excel(file_url, parse_dates=[3], date_parser=dateparse).drop(columns=['source', 'url'])
-    df['date'] = pd.to_datetime(df['date'])
-    # fill the date with monday
-    df.loc[df.indicator.str.contains('Weekly'), 'date'] = df.loc[df.indicator.str.contains('Weekly'), 'year_week']
-
-    return df
+    return pd.read_pickle(TMP_FOLDER+'df_hospitalization.pickle')
 
 
 def filter_data(countries=None, start_date=None, threshold=None):
@@ -117,6 +71,10 @@ def filter_data(countries=None, start_date=None, threshold=None):
     return df
 
 
+def get_countries_list(df, country_variable):
+    return list(df[country_variable].unique())
+
+
 @app.callback(
     Output('intermediate-value', 'children'),
     [Input('country-dropdown-multi', 'value'), Input('date-picker-single', 'date')])
@@ -133,17 +91,17 @@ def filter_data_for_countries(country, date_value):
 
 def serve_layout():
     dropdown_options = []
-    countries_list = list(filter_data().location.unique())
+    countries_list = get_countries_list(read_owid(), "location")
     for cnt in countries_list:
         dropdown_options.append({"label": cnt, "value": cnt})
 
     dropdown_options_2 = []
-    countries_list_2 = list(read_hospitalization().country.unique())
+    countries_list_2 = get_countries_list(read_hospitalization(), "country")
     for cnt in countries_list_2:
         dropdown_options_2.append({"label": cnt, "value": cnt})
 
     region_eu = []
-    region_eu_list = list(read_jrc().location.unique())
+    region_eu_list = get_countries_list(read_jrc(), "location")
     for cnt in region_eu_list:
         region_eu.append({"label": cnt, "value": cnt})
 
@@ -394,11 +352,7 @@ def make_fig_increment(df):
 def make_fig_r0(df):
     df = pd.read_json(df, orient='split')
 
-    r0 = df.groupby("location").apply(compute_r0).reset_index(
-        level="location").drop(columns="location")
-    final = df.merge(r0, right_index=True, left_index=True, how='outer')
-
-    fig = timeseries_plot(final, time_variable="date",
+    fig = timeseries_plot(df, time_variable="date",
                           variable="r0",
                           agg_variable="location",
                           log_y=False,

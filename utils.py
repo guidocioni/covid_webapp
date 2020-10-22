@@ -7,7 +7,7 @@ import plotly.express as px
 import json
 from copy import deepcopy
 
-TIMEOUT = 3600  # Force cache update every hour
+TIMEOUT = 1800  # Force cache update every hour
 threshold_chosen = 10000
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -52,13 +52,16 @@ variable_options_2 = [
 ]
 
 variable_options_eu = [
+    {'value': 'daily_cases',  'label': 'Daily positive'},
+    {'value': 'daily_deaths',  'label': 'Daily deceased'},
+    {'value': 'daily_recovered',  'label': 'Daily recovered'},
+    {'value': 'daily_cases_smoothed',  'label': 'Daily positive (7-days smoothing)'},
+    {'value': 'daily_deaths_smoothed',  'label': 'Daily deceased (7-days smoothing)'},
+    {'value': 'daily_recovered_smoothed',  'label': 'Daily recovered (7-days smoothing)'},
     {'value': 'CumulativePositive', 'label': 'Total positive'},
     {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
     {'value': 'CumulativeRecovered','label': 'Total recovered'},
     {'value': 'CurrentlyPositive',  'label': 'Currently positive'},
-    {'value': 'daily_cases',  'label': 'Daily positive'},
-    {'value': 'daily_deaths',  'label': 'Daily deceased'},
-    {'value': 'daily_recovered',  'label': 'Daily recovered'},
     {'value': 'CurrentlyPositive',  'label': 'Currently positive'}
 ]
 
@@ -84,8 +87,9 @@ table_columns = [
      {'name': 'Cumulative deaths density per 1M inhabitants', 'id': 'total_deaths_per_million',
       'hideable': True, 'type': 'numeric'}]
 
-def compute_r0(group, window=7, variable='new_cases'):
-    # Compute R0 using RKI method
+def compute_r0_old(group, window=7, variable='new_cases'):
+    # Compute R0 using RKI method, old method, really slow,
+    # kept only for reference, will be removed
     r0 = []
     for t in range((2 * window) - 1, len(group)):
         r0.append(group.iloc[t - window + 1:t + 1][variable].sum() /
@@ -93,6 +97,13 @@ def compute_r0(group, window=7, variable='new_cases'):
 
     return pd.DataFrame(data={'r0': r0},
                         index=group.index[(2 * window) - 1:])
+
+def compute_r0(group, window=7):
+    # Compute R0 using RKI method
+    r0 = (group.rolling(window).sum()
+                / group.rolling(window=window, min_periods=1).sum().shift(window-1))
+    
+    return r0
 
 
 def logistic_model(x, a, b, c, d):
