@@ -7,6 +7,11 @@ from datetime import datetime
 
 TMP_FOLDER = '/tmp/'
 
+''' In this script we perform the preprocessing of data shown in the dashboard in the background
+so that the user doesn't have to wait for computatin when opening the dashboard.
+The results are saved in pickle files which are then loded with the same name in the application.
+You can run this script every 2 hours, but even less, with cron 
+0 */2 * * * /usr/bin/python3 /home/covid_webapp/data_processing.py'''
 
 def read_owid():
     '''Reader from OWID which should be a reliable source for many data.'''
