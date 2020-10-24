@@ -1,8 +1,7 @@
-from utils import threshold_chosen, variable_options_2, variable_options, variable_options_eu
-import dash_html_components as html
+from utils import threshold_chosen, variable_options_2, variable_options, variable_options_eu, make_dash_table
 import dash_core_components as dcc
-import dash_table
 from datetime import date
+import dash_html_components as html
 
 
 def get_aggregated_tab(dropdown_options):
@@ -204,44 +203,19 @@ def get_maps_tab():
                   style={'display': 'inline-block'}),
           ]
 
-def get_table_tab(table_data):
+def get_table_tab(table_data, table_data_eu):
+    df = table_data["df"]
+    df = df[df.location == "World"]
     return [
-              html.Div('The table shows only the data from the last update. Red shading indicate values exceeding 90th. and 95th. percentiles'),
-              html.Div(
-                      dash_table.DataTable(
-                          id='table',
-                          columns=table_data['columns'],
-                          data=table_data['data'],
-                          virtualization=True,
-                          style_cell={'textAlign': 'left', 'minWidth': '180px', 'width': '180px', 'maxWidth': '180px'},
-                          fixed_rows={'headers': True},
-                          style_table={'height': 800},
-                          filter_action="native",
-                          sort_action="native",
-                          sort_mode="multi",
-                          style_data_conditional=[
-                                                  {
-                                                      'if': {
-                                                          'filter_query': '{{{}}} >= {}'.format(col, value),
-                                                          'column_id': col
-                                                      },
-                                                      'backgroundColor': 'tomato',
-                                                      'color': 'white'
-                                                  } for (col, value) in table_data['df'].quantile(0.9).iteritems()
-                                              ] + [
-                                                  {
-                                                      'if': {
-                                                          'filter_query': '{{{}}} >= {}'.format(col, value),
-                                                          'column_id': col
-                                                      },
-                                                      'backgroundColor': '#FF4136',
-                                                      'color': 'white'
-                                                  } for (col, value) in table_data['df'].quantile(0.95).iteritems()
-                              ] ,
-                          style_header={
-                                      'backgroundColor': 'rgb(230, 230, 230)',
-                                      'fontWeight': 'bold',
-                                      'whiteSpace': 'normal',
-                                      'height': 'auto',
-                                  }))
+              html.Div([html.H1("🌍 %d new cases" % df.new_cases), html.P("(%4.2f change)" % df.total_cases_change)],
+                        style={'display': 'inline-block', 'padding': 10}),
+              html.Div([html.H1("%d new deceased" % df.new_deaths), html.P("(%4.2f change)" % df.total_deaths_change)],
+                        style={'display': 'inline-block', 'padding': 10}),
+              html.Div('The worst countries in the world in the latest update'),
+              html.Div(make_dash_table(table_data, id='table'), 
+                       style={'display': 'inline-block', 'padding': 10}),
+              html.Div('The worst regions in Europe in the latest update'),
+              html.Div(make_dash_table(table_data_eu, id='table-eu'), 
+                        style={'display': 'inline-block', 'padding': 10}),
+
             ]

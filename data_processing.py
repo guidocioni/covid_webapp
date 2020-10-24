@@ -1,8 +1,5 @@
 from utils import compute_r0
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-import re
 from datetime import datetime
 import numpy as np
 
@@ -68,20 +65,6 @@ def read_jrc():
     df = df.replace([np.inf, -np.inf], np.nan)
 
     return df.reset_index()
-
-
-# def read_weekly_ecdc():
-#     r = requests.get(
-#         'https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19')
-#     soup = BeautifulSoup(r.text, features="lxml")
-#     file_url = soup.findAll('a',
-#                             string="Download data on the weekly subnational 14-day notification rate of new cases per 100 000 inhabitants for COVID-19",
-#                             href=re.compile(".xls"))[0]['href']
-
-#     df = pd.read_excel(file_url)
-
-#     # Only return last week otherwise it takes too long to make the picture
-#     return df[df.year_week == df.year_week.max()]
 
 
 def read_hospitalization():

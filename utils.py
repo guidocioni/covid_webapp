@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
-from scipy.optimize import curve_fit
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, curve_fit
 import plotly.graph_objs as go
 import plotly.express as px
 import json
 from copy import deepcopy
+from dash_table import DataTable
 
 TIMEOUT = 1800  # Force cache update every hour
 threshold_chosen = 10000
@@ -90,18 +90,25 @@ table_columns = [
      'hideable': True, 'type': 'numeric'},
     {'name': 'Daily Deaths', 'id': 'new_deaths',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'Cumulative cases', 'id': 'total_cases',
+    {'name': 'Change of daily cases', 'id': 'total_cases_change',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'Cumulative deaths', 'id': 'total_deaths',
+    {'name': 'R0', 'id': 'r0',
+     'hideable': True, 'type': 'numeric'}     
+     ]
+
+
+table_columns_eu = [
+    {'name': 'Country', 'id': 'CountryName',
+     'hideable': True, 'type': 'text'},
+    {'name': 'Region', 'id': 'Region',
+     'hideable': True, 'type': 'text'},
+    {'name': 'Daily Cases', 'id': 'daily_cases',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'Pct. change of cumulative cases', 'id': 'total_cases_change',
+    {'name': 'Change of daily cases', 'id': 'total_cases_change',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'Pct. change of cumulative deaths', 'id': 'total_deaths_change',
-     'hideable': True, 'type': 'numeric'},
-    {'name': 'Cumulative cases density per 1M inhabitants', 'id': 'total_cases_per_million',
-     'hideable': True, 'type': 'numeric'},
-    {'name': 'Cumulative deaths density per 1M inhabitants', 'id': 'total_deaths_per_million',
-     'hideable': True, 'type': 'numeric'}]
+    {'name': 'R0', 'id': 'r0',
+     'hideable': True, 'type': 'numeric'}    
+     ]
 
 
 def compute_r0_old(group, window=7, variable='new_cases'):
@@ -460,3 +467,51 @@ def make_fig_hospitalization_base(df, time_variable, value_variable, color_varia
   apply_base_layout(fig, title='')
 
   return fig
+
+
+def make_dash_table(table_data, id):
+    return DataTable(id=id,
+                          columns=table_data['columns'],
+                          data=table_data['data'],
+                          virtualization=True,
+                          style_cell={'textAlign': 'left', 'minWidth': '100px', 
+                                      'width': '100px', 'maxWidth': '100px'},
+                          fixed_rows={'headers': True},
+                          style_table={'height': 600, 'width': 700},
+                          filter_action="native",
+                          sort_action="native",
+                          sort_mode="multi",
+                          style_data_conditional=[
+                                              {
+                                            'if': {
+                                                'filter_query': '{total_cases_change} > 0',
+                                                'column_id': 'total_cases_change'
+                                            },
+                                            'backgroundColor': 'tomato',
+                                            'color': 'white'
+                                            }] + 
+                                            [
+                                            {
+                                            'if': {
+                                                'filter_query': '{total_cases_change} > 10',
+                                                'column_id': 'total_cases_change'
+                                            },
+                                            'backgroundColor': '#FF4136',
+                                            'color': 'white'
+                                            }] +
+                                            [
+                                            {
+                                            'if': {
+                                                'filter_query': '{total_cases_change} < -1',
+                                                'column_id': 'total_cases_change'
+                                            },
+                                            'backgroundColor': '#3D9970',
+                                            'color': 'white'
+                                            }],
+                            style_header={
+                                      'backgroundColor': 'rgb(230, 230, 230)',
+                                      'fontWeight': 'bold',
+                                      'whiteSpace': 'normal',
+                                      'height': 'auto',
+                                  })
+

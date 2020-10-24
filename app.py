@@ -102,6 +102,11 @@ def serve_layout():
         dcc.Tabs(parent_className='custom-tabs',
                  className='custom-tabs-container',
                  children=[
+                    dcc.Tab(label='Tables (daily data)',
+                             className='custom-tab',
+                             selected_className='custom-tab--selected',
+                             children=get_table_tab(make_table_data(), make_table_data_eu())),
+					# -----------------------------------------------------  #
                      dcc.Tab(label='Aggregated data',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
@@ -127,11 +132,6 @@ def serve_layout():
                              selected_className='custom-tab--selected',
                              children=get_maps_tab()),
                      # -----------------------------------------------------  #
-                     dcc.Tab(label='Tables (daily data)',
-                             className='custom-tab',
-                             selected_className='custom-tab--selected',
-                             children=get_table_tab(make_table_data()))
-                     # -----------------------------------------------------  #
                  ]),
         html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
     ],
@@ -151,6 +151,19 @@ def make_table_data():
     data = df.to_dict('records')
 
     return {'columns': table_columns,
+            'data': data,
+            'df': df}
+
+
+def make_table_data_eu():
+    df = read_jrc()
+    df = df.loc[df.Date == df.Date.max()]\
+        .round(3).sort_values(by="total_cases_change",
+                              ascending=False)
+
+    data = df.to_dict('records')
+
+    return {'columns': table_columns_eu,
             'data': data,
             'df': df}
 
