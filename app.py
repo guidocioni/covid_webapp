@@ -102,17 +102,17 @@ def serve_layout():
         dcc.Tabs(parent_className='custom-tabs',
                  className='custom-tabs-container',
                  children=[
-                    dcc.Tab(label='Tables (daily data)',
+                    dcc.Tab(label='Daily data overview',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_table_tab(make_table_data(), make_table_data_eu())),
 					# -----------------------------------------------------  #
-                     dcc.Tab(label='Aggregated data',
+                     dcc.Tab(label='Plots (global)',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_aggregated_tab(dropdown_options)),
                      # -----------------------------------------------------  #
-                     dcc.Tab(label='Aggregated data (EU by regions)',
+                     dcc.Tab(label='Plots (EU regions)',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_aggregated_eu_tab(region_eu)),
@@ -122,7 +122,7 @@ def serve_layout():
                              selected_className='custom-tab--selected',
                              children=get_testing_tab(dropdown_options, dropdown_options_2)),
                      # -----------------------------------------------------  #
-                     dcc.Tab(label='Forecast (logistic)',
+                     dcc.Tab(label='Forecast',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_forecast_tab(dropdown_options)),
