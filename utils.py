@@ -77,7 +77,6 @@ variable_options_eu = [
     {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
     {'value': 'CumulativeRecovered', 'label': 'Total recovered'},
     {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
-    {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
     {'value': 'r0', 'label': 'Reproductivity number R0'}
 ]
 
@@ -109,6 +108,40 @@ table_columns_eu = [
     {'name': 'R0', 'id': 'r0',
      'hideable': True, 'type': 'numeric'}    
      ]
+
+plot_opts = {
+    'daily_cases':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 5000)},
+    'daily_deaths':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 50)},
+    'daily_recovered':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 2000)},
+    'daily_cases_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 5000)},
+    'daily_deaths_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 50)},
+    'daily_recovered_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 2000)},
+    'total_cases_change':{'color_continuous_scale':"curl", 'range_color':(-200, 200)},
+    'total_deaths_change':{'color_continuous_scale':"curl", 'range_color':(-20, 20)},
+    'CumulativePositive':{'color_continuous_scale':"YlOrRd"},
+    'CumulativeDeceased':{'color_continuous_scale':"YlOrRd"},
+    'CumulativeRecovered':{'color_continuous_scale':"YlOrRd"},
+    'CurrentlyPositive':{'color_continuous_scale':"YlOrRd"},
+    'r0':{'color_continuous_scale':"Inferno", 'range_color':(0, 5)},
+}
+
+plot_opts_global = {
+    'new_cases':{'color_continuous_scale':"amp", 'range_color':(1000, 50000)},
+    'new_deaths':{'color_continuous_scale':"amp", 'range_color':(0, 1000)},
+    'total_cases':{'color_continuous_scale':"amp", 'range_color':(5e4, 10e6)},
+    'total_deaths':{'color_continuous_scale':"amp"},
+    'total_cases_per_million':{'color_continuous_scale':"amp"},
+    'new_cases_per_million':{'color_continuous_scale':"amp"},
+    'total_deaths_per_million':{'color_continuous_scale':"amp"},
+    'new_deaths_per_million':{'color_continuous_scale':"amp"},
+    'total_cases_change':{'color_continuous_scale':"curl", 'range_color':(-25, 25)},
+    'total_deaths_change':{'color_continuous_scale':"curl", 'range_color':(-5, 5)},
+    'r0':{'color_continuous_scale':"Inferno", 'range_color':(0, 5)},
+    'stringency_index':{'color_continuous_scale':"tempo", 'range_color':(0, 100)},
+    'positive_rate':{'color_continuous_scale':"amp", 'range_color':(0, 50)},
+    'total_tests_per_thousand':{'color_continuous_scale':"amp"},
+    'new_tests_per_thousand':{'color_continuous_scale':"amp"},
+}
 
 
 def compute_r0_old(group, window=7, variable='new_cases'):
@@ -386,23 +419,19 @@ def make_fig_fit_base(df):
 
 
 def make_fig_map_base(df, variable):
-  fig = px.choropleth(df, locations="iso_code",
+    out = df.groupby("location").apply(lambda x: x[x.index == x[variable].last_valid_index()])
+
+    fig = px.choropleth(out, locations="iso_code",
                       color=variable,
-                      hover_name="location",
-                      animation_frame=df.date.astype(str),
-                      color_continuous_scale="YlOrRd")
-  fig.update_geos(projection_type="kavrayskiy7")
-  fig.update_layout(coloraxis_colorbar=dict(title=""),
+                      hover_data=['location', 'date'],
+                      **plot_opts_global[variable])
+    fig.update_geos(projection_type="kavrayskiy7")
+    fig.update_layout(coloraxis_colorbar=dict(title=""),
                     height=500,
                     width=800,
                     margin={"r": 0, "t": 50, "l": 0, "b": 0})
-  fig['layout']['updatemenus'][0]['pad'] = dict(r=10, t=0)
-  fig['layout']['sliders'][0]['pad'] = dict(r=10, t=0,)
-  fig.layout.sliders[0]['active'] = len(fig.frames) - 1
-  fig.update_traces(z=fig.frames[-1].data[0].z,
-                    hovertemplate=fig.frames[-1].data[0].hovertemplate)
 
-  return fig
+    return fig
 
 
 def make_fig_map_weekly(df, variable):
@@ -428,8 +457,8 @@ def make_fig_map_weekly(df, variable):
                              zoom=2.5,
                              center={"lat": 51.4816, "lon": 3.1791},
                              opacity=0.7,
-                             color_continuous_scale="YlOrRd",
-                             title='')
+                             title='',
+                             **plot_opts[variable])
 
     fig.update_geos(showcountries=False, showcoastlines=True,
                   showland=False, fitbounds="locations")
@@ -475,7 +504,8 @@ def make_dash_table(table_data, id):
                           data=table_data['data'],
                           virtualization=True,
                           style_cell={'textAlign': 'left', 'minWidth': '100px', 
-                                      'width': '100px', 'maxWidth': '100px'},
+                                      'width': '100px', 'maxWidth': '100px', 'font-family': 'verdana',
+                                      'fontSize':13,},
                           fixed_rows={'headers': True},
                           style_table={'height': 600, 'width': 700},
                           filter_action="native",

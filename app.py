@@ -33,6 +33,7 @@ def read_owid():
 def read_jrc():
     return pd.read_pickle(TMP_FOLDER + 'df_jrc.pickle')
 
+
 # @cache.memoize(timeout=TIMEOUT)
 def read_hospitalization():
     return pd.read_pickle(TMP_FOLDER + 'df_hospitalization.pickle')
@@ -95,9 +96,10 @@ def serve_layout():
         region_eu.append({"label": cnt, "value": cnt})
 
     return html.Div(children=[
-        html.Div(html.H1('COVID-19 Monitoring')),
-        html.Div('Data are taken from the European Center for Disease Monitoring (ECDC). Choose the relevant tab to show different plots.'),
-        html.Div('Last Update: %s' % str(filter_data().date.max())),
+        html.Div([html.H1('COVID-19 Monitoring', style={'display': 'inline'}), html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y') )]),
+        html.P('Data is obtained from the European Center for Disease Monitoring (ECDC)'),
+        html.P('Although new data is downloaded and updated every 2 hours in this dashboard it may not reflect any change in the source.\
+         Moreover data during the weekend and in the morning may be incomplete.'),
         #
         dcc.Tabs(parent_className='custom-tabs',
                  className='custom-tabs-container',
@@ -106,7 +108,7 @@ def serve_layout():
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_table_tab(make_table_data(), make_table_data_eu())),
-					# -----------------------------------------------------  #
+                     # -----------------------------------------------------  #
                      dcc.Tab(label='Plots (global)',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
@@ -133,7 +135,7 @@ def serve_layout():
                              children=get_maps_tab()),
                      # -----------------------------------------------------  #
                  ]),
-        html.Div(html.A('Created by Guido Cioni', href='www.guidocioni.it'))
+        html.Div(html.A('Created by Guido Cioni', href='http://guidocioni.altervista.org/nuovosito/'))
     ],
         style={'width': '100%', 'display': 'inline-block'})
 
@@ -145,7 +147,7 @@ def make_table_data():
     df = filter_data(start_date='2020-03-15',
                      threshold=1000)
     df = df.loc[df.date == df.date.max()]\
-        .round(3).sort_values(by="total_cases_change",
+        .round(3).sort_values(by="new_cases",
                               ascending=False)
 
     data = df.to_dict('records')
@@ -158,7 +160,7 @@ def make_table_data():
 def make_table_data_eu():
     df = read_jrc()
     df = df.loc[df.Date == df.Date.max()]\
-        .round(3).sort_values(by="total_cases_change",
+        .round(3).sort_values(by="daily_cases",
                               ascending=False)
 
     data = df.to_dict('records')
@@ -345,7 +347,7 @@ def make_fig_cases(df):
                           variable="new_cases_smoothed",
                           agg_variable="location",
                           log_y=False,
-                          title='7-day smoothed Daily cases evolution')
+                          title='7-day smoothed daily cases evolution')
 
     return fig
 
@@ -361,8 +363,6 @@ def make_fig_increment(df):
                           agg_variable="location",
                           log_y=False,
                           title='7-day smoothed daily increase in confirmed cases')
-
-    fig.update_yaxes(range=[0, 20])
 
     return fig
 

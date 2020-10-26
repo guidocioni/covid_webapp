@@ -7,8 +7,6 @@ import dash_html_components as html
 def get_aggregated_tab(dropdown_options):
     return [
               html.Div('Click on the legend items to show/hide countries and/or select the countries from the dropdown.'),
-              html.Div(
-                  'Only countries with more than %s cases at the latest update are included in the search.' % threshold_chosen),
               html.Br(),
               html.Div(
                   [dcc.Dropdown(
@@ -185,7 +183,7 @@ def get_maps_tab():
                   dcc.Dropdown(
                       id='variable-dropdown',
                       options=variable_options,
-                      value="new_cases_smoothed_per_million"),
+                      value="total_cases_change"),
                   dcc.Graph(
                       id='figure-map-world',
                       style={'width': '800'}
@@ -207,15 +205,19 @@ def get_table_tab(table_data, table_data_eu):
     df = table_data["df"]
     df = df[df.location == "World"]
     return [
-              html.Div([html.H1("🌍 %d new cases" % df.new_cases), html.P("(%4.2f change)" % df.total_cases_change)],
+              html.Div([html.H2("🌍 %d new cases" % df.new_cases), html.P("(%4.2f change)" % df.total_cases_change)],
                         style={'display': 'inline-block', 'padding': 10}),
-              html.Div([html.H1("%d new deceased" % df.new_deaths), html.P("(%4.2f change)" % df.total_deaths_change)],
+              html.Div([html.H2("%d new deceased" % df.new_deaths), html.P("(%4.2f change)" % df.total_deaths_change)],
                         style={'display': 'inline-block', 'padding': 10}),
-              html.Div('The worst countries in the world in the latest update'),
-              html.Div(make_dash_table(table_data, id='table'), 
-                       style={'display': 'inline-block', 'padding': 10}),
-              html.Div('The worst regions in Europe in the latest update'),
-              html.Div(make_dash_table(table_data_eu, id='table-eu'), 
+              html.Br(),
+              html.Div([
+                        html.H5('Countries in the World', style={'float':'right','padding-right': 10}),
+                        make_dash_table(table_data, id='table')],
+                        style={'display': 'inline-block', 'padding': 10}),
+              #html.Div('The worst regions in Europe in the latest update'),
+              html.Div([
+                        html.H5('Regions in Europe', style={'float':'right','padding-right': 10}),
+                        make_dash_table(table_data_eu, id='table-eu')], 
                         style={'display': 'inline-block', 'padding': 10}),
 
             ]
