@@ -159,9 +159,9 @@ def make_table_data():
 
 def make_table_data_eu():
     df = read_jrc()
-    df = df.loc[df.Date == df.Date.max()]\
-        .round(3).sort_values(by="daily_cases",
-                              ascending=False)
+    df = df[df.Region!="NOT SPECIFIED"].groupby("location")\
+    .apply(lambda x: x[x.index == x["daily_cases"].last_valid_index()])\
+    .round(3).sort_values(by="daily_cases",ascending=False)
 
     data = df.to_dict('records')
 
