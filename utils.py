@@ -132,6 +132,8 @@ table_columns_eu = [
      'hideable': True, 'type': 'text'},
     {'name': 'Region', 'id': 'Region',
      'hideable': False, 'type': 'text'},
+    {'name': 'Last update', 'id': 'Date',
+     'hideable': True, 'type': 'text'},
     {'name': 'Daily Cases', 'id': 'daily_cases',
      'hideable': True, 'type': 'numeric'},
     {'name': 'Change of daily cases', 'id': 'total_cases_change',
