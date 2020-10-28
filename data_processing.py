@@ -46,7 +46,7 @@ def read_jrc():
     for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered', 'CurrentlyPositive']:
         df.loc[df[column] < 0, column] = np.nan
     # correct data for France that is missing
-    df.loc[(df.iso3=='FRA') & (df.Date > '2020-03-25'), 'CumulativePositive'] = np.nan
+    df.loc[(df.iso3=='FRA') & (df.index > '2020-03-25'), 'CumulativePositive'] = np.nan
 
     df['daily_cases'] = df.groupby(
         "Region")['CumulativePositive'].transform(lambda x: x.diff())
