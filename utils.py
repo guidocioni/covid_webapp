@@ -185,6 +185,23 @@ plot_opts_global = {
 }
 
 
+def get_last_valid_data(df, grouper='location', variable='daily_cases', 
+                        time_window='30d', time_variable='Date'):
+    '''Get last valid data (no NaN) for variable in time over a grouped dataframe
+    with the constraint that it has to be dated between today and today-time_window
+    to exclude really old data.'''
+    df = df.set_index(time_variable)
+    today = pd.to_datetime('today')
+    def selector(group, today, time_window):
+        date_last = group[variable].last_valid_index() # this is a datetime
+        try:
+            if today - date_last < pd.to_timedelta(time_window):
+                return group[group.index == date_last]
+        except TypeError:
+            return None
+
+    return df.groupby(grouper).apply(selector, today=today, time_window=time_window).reset_index(level=time_variable)
+
 def compute_r0_old(group, window=7, variable='new_cases'):
   # Compute R0 using RKI method, old method, really slow,
   # kept only for reference, will be removed
@@ -460,7 +477,7 @@ def make_fig_fit_base(df):
 
 
 def make_fig_map_base(df, variable):
-    out = df.groupby("location").apply(lambda x: x[x.index == x[variable].last_valid_index()])
+    out = get_last_valid_data(df, variable='new_cases', time_variable='date')
 
     fig = px.choropleth(out, locations="iso_code",
                       color=variable,
@@ -488,7 +505,7 @@ def make_fig_map_weekly(df, variable):
                         'type': 'FeatureCollection',
                         'features': geojson_filtered}
 
-    out = df.groupby("NUTS").apply(lambda x: x[x.index == x[variable].last_valid_index()])
+    out = get_last_valid_data(df, variable='daily_cases', time_variable='Date')
 
     fig = px.choropleth_mapbox(out, hover_data=['location', 'Date'],
                              geojson=geojson_filtered_2,
