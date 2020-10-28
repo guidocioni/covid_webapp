@@ -17,15 +17,15 @@ variable_options = [
     {'value': 'total_cases', 'label': 'Total confirmed cases of COVID-19'},
     {'value': 'new_cases', 'label': 'New confirmed cases of COVID-19'},
     {'value': 'total_deaths',
-        'label': 'Total deaths attributed to COVID-19'},
+        'label': 'Total deaths'},
     {'value': 'total_cases_per_million',
-        'label': 'Total confirmed cases of COVID-19 per 1,000,000 people'},
+        'label': 'Total confirmed cases per million'},
     {'value': 'new_cases_per_million',
-        'label': 'New confirmed cases of COVID-19 per 1,000,000 people'},
+        'label': 'New confirmed cases per million'},
     {'value': 'total_deaths_per_million',
-        'label': 'Total deaths attributed to COVID-19 per 1,000,000 people'},
+        'label': 'Total deaths per million'},
     {'value': 'new_deaths_per_million',
-        'label': 'New deaths attributed to COVID-19 per 1,000,000 people'},
+        'label': 'New deaths per million'},
     {'value': 'new_tests_per_thousand',
      'label': 'New tests per thousand'},
     {'value': 'total_tests_per_thousand',
@@ -44,46 +44,61 @@ variable_options = [
 
 # Used in the test tab
 variable_options_2 = [
-    {'value': 'total_tests', 'label': 'Total tests for COVID-19'},
-    {'value': 'new_tests', 'label': 'New tests for COVID-19'},
+    {'value': 'total_tests', 'label': 'Total tests'},
+    {'value': 'new_tests', 'label': 'New tests'},
     {'value': 'new_tests_smoothed',
-     'label': "New tests for COVID-19 (7-day smoothed)."},
+     'label': "New tests (7-day smoothed)"},
     {'value': 'total_tests_per_thousand',
-     'label': 'Total tests for COVID-19 per 1,000 people'},
+     'label': 'Total tests per 1,000 people'},
     {'value': 'new_tests_per_thousand',
-     'label': 'New tests for COVID-19 per 1,000 people'},
+     'label': 'New tests per 1,000 people'},
     {'value': 'new_tests_smoothed_per_thousand',
-     'label': 'New tests for COVID-19 (7-day smoothed) per 1,000 people'},
+     'label': 'New tests (7-day smoothed) per 1,000 people'},
     {'value': 'tests_per_case',
-     'label': 'Tests conducted per new confirmed case of COVID-19'},
+     'label': 'Tests conducted per new confirmed case'},
     {'value': 'positive_rate',
-     'label': 'The share of COVID-19 tests that are positive'}
+     'label': 'The share of tests that are positive'}
 ]
 
 # Used in the time series of EU aggregated variables
 variable_options_eu = [
     {'value': 'daily_cases', 'label': 'Daily positive'},
+    {'value': 'daily_cases_per_million', 'label': 'Daily positive per million'},
     {'value': 'daily_deaths', 'label': 'Daily deceased'},
+    {'value': 'daily_deaths_per_million', 'label': 'Daily deceased per million'},
     {'value': 'daily_recovered', 'label': 'Daily recovered'},
+    {'value': 'daily_recovered_per_million', 'label': 'Daily recovered per million'},
     {'value': 'daily_cases_smoothed',
      'label': 'Daily positive (7-days smoothing)'},
+    {'value': 'daily_cases_smoothed_per_million',
+     'label': 'Daily positive per million (7-days smoothing)'},
     {'value': 'daily_deaths_smoothed',
      'label': 'Daily deceased (7-days smoothing)'},
+    {'value': 'daily_deaths_smoothed_per_million',
+     'label': 'Daily deceased per million (7-days smoothing)'},
     {'value': 'daily_recovered_smoothed',
      'label': 'Daily recovered (7-days smoothing)'},
+    {'value': 'daily_recovered_smoothed_per_million',
+     'label': 'Daily recovered per million (7-days smoothing)'},
     {'value': 'total_cases_change', 'label': 'Smoothed change in daily new cases'},
     {'value': 'total_deaths_change', 'label': 'Smoothed change in daily new deceased'},
     {'value': 'CumulativePositive', 'label': 'Total positive'},
+    {'value': 'CumulativePositive_per_million', 'label': 'Total positive per million'},
     {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
+    {'value': 'CumulativeDeceased_per_million', 'label': 'Total deceased per million'},
     {'value': 'CumulativeRecovered', 'label': 'Total recovered'},
+    {'value': 'CumulativeRecovered_per_million', 'label': 'Total recovered per million'},
     {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
+    {'value': 'CurrentlyPositive_per_million', 'label': 'Currently positive per million'},
     {'value': 'r0', 'label': 'Reproductivity number R0'}
 ]
 
 table_columns = [
     {'name': 'Continent', 'id': 'continent',
-     'hideable': True, 'type': 'text'},
+     'hideable': False, 'type': 'text'},
     {'name': 'Country', 'id': 'location',
+     'hideable': False, 'type': 'text'},
+    {'name': 'Last update', 'id': 'date',
      'hideable': True, 'type': 'text'},
     {'name': 'Daily Cases', 'id': 'new_cases',
      'hideable': True, 'type': 'numeric'},
@@ -91,8 +106,24 @@ table_columns = [
      'hideable': True, 'type': 'numeric'},
     {'name': 'Change of daily cases', 'id': 'total_cases_change',
      'hideable': True, 'type': 'numeric'},
+    {'name': 'Change of daily deaths', 'id': 'total_deaths_change',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Total cases', 'id': 'total_cases',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Total deaths', 'id': 'total_deaths',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Total cases per million', 'id': 'total_cases_per_million',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Total deaths per million', 'id': 'total_deaths_per_million',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'New tests per thousand', 'id': 'new_tests_per_thousand',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Total tests per thousand', 'id': 'total_tests_per_thousand',
+     'hideable': True, 'type': 'numeric'},
+    {'name': 'Positive tests rate', 'id': 'positive_rate',
+     'hideable': True, 'type': 'numeric'},
     {'name': 'R0', 'id': 'r0',
-     'hideable': True, 'type': 'numeric'}     
+     'hideable': True, 'type': 'numeric'}
      ]
 
 
@@ -100,7 +131,7 @@ table_columns_eu = [
     {'name': 'Country', 'id': 'CountryName',
      'hideable': True, 'type': 'text'},
     {'name': 'Region', 'id': 'Region',
-     'hideable': True, 'type': 'text'},
+     'hideable': False, 'type': 'text'},
     {'name': 'Daily Cases', 'id': 'daily_cases',
      'hideable': True, 'type': 'numeric'},
     {'name': 'Change of daily cases', 'id': 'total_cases_change',
@@ -116,12 +147,22 @@ plot_opts = {
     'daily_cases_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 5000)},
     'daily_deaths_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 50)},
     'daily_recovered_smoothed':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 2000)},
+    'daily_cases_per_million':{'color_continuous_scale':"YlOrRd"},
+    'daily_deaths_per_million':{'color_continuous_scale':"YlOrRd"},
+    'daily_recovered_per_million':{'color_continuous_scale':"YlOrRd"},
+    'daily_cases_smoothed_per_million':{'color_continuous_scale':"YlOrRd"},
+    'daily_deaths_smoothed_per_million':{'color_continuous_scale':"YlOrRd"},
+    'daily_recovered_smoothed_per_million':{'color_continuous_scale':"YlOrRd"},
     'total_cases_change':{'color_continuous_scale':"curl", 'range_color':(-200, 200)},
     'total_deaths_change':{'color_continuous_scale':"curl", 'range_color':(-20, 20)},
     'CumulativePositive':{'color_continuous_scale':"YlOrRd"},
     'CumulativeDeceased':{'color_continuous_scale':"YlOrRd"},
     'CumulativeRecovered':{'color_continuous_scale':"YlOrRd"},
     'CurrentlyPositive':{'color_continuous_scale':"YlOrRd"},
+    'CumulativePositive_per_million':{'color_continuous_scale':"YlOrRd"},
+    'CumulativeDeceased_per_million':{'color_continuous_scale':"YlOrRd"},
+    'CumulativeRecovered_per_million':{'color_continuous_scale':"YlOrRd"},
+    'CurrentlyPositive_per_million':{'color_continuous_scale':"YlOrRd"},
     'r0':{'color_continuous_scale':"Inferno", 'range_color':(0, 5)},
 }
 
@@ -455,7 +496,7 @@ def make_fig_map_weekly(df, variable):
                              color=variable,
                              mapbox_style="carto-positron",
                              zoom=2.5,
-                             center={"lat": 51.4816, "lon": 3.1791},
+                             center={"lat": 53, "lon": 3.1791},
                              opacity=0.7,
                              title='',
                              **plot_opts[variable])
@@ -500,48 +541,52 @@ def make_fig_hospitalization_base(df, time_variable, value_variable, color_varia
 
 def make_dash_table(table_data, id):
     return DataTable(id=id,
-                          columns=table_data['columns'],
-                          data=table_data['data'],
-                          virtualization=True,
-                          style_cell={'textAlign': 'left', 'minWidth': '100px', 
-                                      'width': '100px', 'maxWidth': '100px', 'font-family': 'verdana',
-                                      'fontSize':13,},
-                          fixed_rows={'headers': True},
-                          style_table={'height': 600, 'width': 700},
-                          filter_action="native",
-                          sort_action="native",
-                          sort_mode="multi",
-                          style_data_conditional=[
-                                              {
-                                            'if': {
-                                                'filter_query': '{total_cases_change} > 0',
-                                                'column_id': 'total_cases_change'
-                                            },
-                                            'backgroundColor': 'tomato',
-                                            'color': 'white'
-                                            }] + 
-                                            [
-                                            {
-                                            'if': {
-                                                'filter_query': '{total_cases_change} > 10',
-                                                'column_id': 'total_cases_change'
-                                            },
-                                            'backgroundColor': '#FF4136',
-                                            'color': 'white'
-                                            }] +
-                                            [
-                                            {
-                                            'if': {
-                                                'filter_query': '{total_cases_change} < -1',
-                                                'column_id': 'total_cases_change'
-                                            },
-                                            'backgroundColor': '#3D9970',
-                                            'color': 'white'
-                                            }],
-                            style_header={
-                                      'backgroundColor': 'rgb(230, 230, 230)',
-                                      'fontWeight': 'bold',
-                                      'whiteSpace': 'normal',
-                                      'height': 'auto',
-                                  })
+                    columns=table_data['columns'],
+                    data=table_data['data'],
+                    hidden_columns=['total_deaths_change', 'total_cases', 'total_deaths',
+                                    'total_cases_per_million', 'total_deaths_per_million',
+                                    'new_tests_per_thousand', 'total_tests_per_thousand',
+                                    'positive_rate', 'Date', 'date'],
+                    virtualization=True,
+                    style_cell={'textAlign': 'left', 'minWidth': '100px', 
+                                'width': '100px', 'maxWidth': '100px', 'font-family': 'verdana',
+                                'fontSize':13,},
+                    fixed_rows={'headers': True},
+                    style_table={'height': 600, 'width': 700},
+                    filter_action="native",
+                    sort_action="native",
+                    sort_mode="multi",
+                    style_data_conditional=[
+                                        {
+                                      'if': {
+                                          'filter_query': '{total_cases_change} > 0',
+                                          'column_id': 'total_cases_change'
+                                      },
+                                      'backgroundColor': 'tomato',
+                                      'color': 'white'
+                                      }] + 
+                                      [
+                                      {
+                                      'if': {
+                                          'filter_query': '{total_cases_change} > 10',
+                                          'column_id': 'total_cases_change'
+                                      },
+                                      'backgroundColor': '#FF4136',
+                                      'color': 'white'
+                                      }] +
+                                      [
+                                      {
+                                      'if': {
+                                          'filter_query': '{total_cases_change} < -1',
+                                          'column_id': 'total_cases_change'
+                                      },
+                                      'backgroundColor': '#3D9970',
+                                      'color': 'white'
+                                      }],
+                      style_header={
+                                'backgroundColor': 'rgb(230, 230, 230)',
+                                'fontWeight': 'bold',
+                                'whiteSpace': 'normal',
+                                'height': 'auto',
+                            })
 

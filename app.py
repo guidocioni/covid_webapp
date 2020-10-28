@@ -122,7 +122,8 @@ def serve_layout():
                      dcc.Tab(label='Testing & Hospitalization',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
-                             children=get_testing_tab(dropdown_options, dropdown_options_2)),
+                             children=get_testing_tab(dropdown_options, 
+                                                    dropdown_options_2)),
                      # -----------------------------------------------------  #
                      dcc.Tab(label='Forecast',
                              className='custom-tab',
@@ -144,10 +145,11 @@ app.layout = serve_layout
 
 
 def make_table_data():
-    df = filter_data(start_date='2020-03-15',
-                     threshold=1000)
-    df = df.loc[df.date == df.date.max()]\
-        .round(3).sort_values(by="new_cases",
+    df = filter_data(start_date='2020-03-15')
+
+    df = df.groupby("location")\
+    .apply(lambda x: x[x.index == x["new_cases"].last_valid_index()])\
+    .round(3).sort_values(by="new_cases",
                               ascending=False)
 
     data = df.to_dict('records')
@@ -262,7 +264,7 @@ def make_fig_testing(variable, country):
     Output('figure-map-world', 'figure'),
     [Input('variable-dropdown', 'value')])
 def make_fig_map_world(variable):
-    df = filter_data(start_date='2020-06-01', threshold=1000)
+    df = filter_data(start_date='2020-06-01')
 
     return make_fig_map_base(df, variable)
 

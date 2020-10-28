@@ -177,8 +177,8 @@ def get_forecast_tab(dropdown_options):
 def get_maps_tab():
     return [
             html.Div('Shown is the geographical distribution of many variables. \
-              In the first plot you can select the variable to be plotted and explore the daily variation using the slider.\
-              In the second plot only the most recent data for every region in Europe is shown.'),
+                      You can select the variable to be shown using the dropdown.\
+                      Only the most recent data for that variable is shown in the map.'),
             html.Div([
                   dcc.Dropdown(
                       id='variable-dropdown',

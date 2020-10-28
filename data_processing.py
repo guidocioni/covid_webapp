@@ -40,6 +40,13 @@ def read_jrc():
                      index_col=[0])
 
     df = df.sort_index()
+    pop = pd.read_csv('nuts_europe_population.csv')
+
+    # cannot be negative 
+    for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered', 'CurrentlyPositive']:
+        df.loc[df[column] < 0, column] = np.nan
+    # correct data for France that is missing
+    df.loc[(df.iso3=='FRA') & (df.Date > '2020-03-25'), 'CumulativePositive'] = np.nan
 
     df['daily_cases'] = df.groupby(
         "Region")['CumulativePositive'].transform(lambda x: x.diff())
@@ -64,7 +71,16 @@ def read_jrc():
 
     df = df.replace([np.inf, -np.inf], np.nan)
 
-    return df.reset_index()
+    df = df.reset_index().merge(pop, left_on='NUTS', right_on='nuts_code').drop(columns='nuts_code')
+
+    for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered',
+       'CurrentlyPositive', 'daily_cases', 'daily_deaths',
+       'daily_recovered', 'daily_cases_smoothed', 'daily_deaths_smoothed',
+       'daily_recovered_smoothed']:
+
+        df[column+'_per_million'] = df[column] / df['population'] * 1e6
+
+    return df
 
 
 def read_hospitalization():
@@ -89,8 +105,7 @@ try:
 except:
     print("Error in downloading/processing df_jrc")
 
-# df_weekly_ecdc = read_weekly_ecdc().to_pickle(
-#     TMP_FOLDER + 'df_weekly_ecdc.pickle')
+
 try:
     df_hospitalization = read_hospitalization().to_pickle(
         TMP_FOLDER + 'df_hospitalization.pickle')
