@@ -14,18 +14,28 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 # Used in the world map
 variable_options = [
-    {'value': 'total_cases', 'label': 'Total confirmed cases of COVID-19'},
-    {'value': 'new_cases', 'label': 'New confirmed cases of COVID-19'},
+    {'value': 'total_cases', 'label': 'Total confirmed cases'},
+    {'value': 'new_cases', 'label': 'New confirmed cases'},
+    {'value': 'new_cases_smoothed', 'label': 'New confirmed cases (7-day smoothing'},
     {'value': 'total_deaths',
         'label': 'Total deaths'},
     {'value': 'total_cases_per_million',
         'label': 'Total confirmed cases per million'},
     {'value': 'new_cases_per_million',
         'label': 'New confirmed cases per million'},
+    {'value': 'new_cases_smoothed_per_million',
+        'label': 'New confirmed cases per million (7-day smoothing)'},
     {'value': 'total_deaths_per_million',
         'label': 'Total deaths per million'},
     {'value': 'new_deaths_per_million',
         'label': 'New deaths per million'},
+    {'value': 'new_deaths_smoothed_per_million',
+        'label': 'New deaths per million (7-day smoothing)'},
+    {'value': 'new_deaths_smoothed', 'label': 'New confirmed deceased (7-day smoothing)'},
+    {'value': 'new_tests',
+     'label': 'New tests'},
+    {'value': 'total_tests',
+     'label': 'Total tests'},
     {'value': 'new_tests_per_thousand',
      'label': 'New tests per thousand'},
     {'value': 'total_tests_per_thousand',
@@ -60,38 +70,6 @@ variable_options_2 = [
      'label': 'The share of tests that are positive'}
 ]
 
-# Used in the time series of EU aggregated variables
-variable_options_eu = [
-    {'value': 'daily_cases', 'label': 'Daily positive'},
-    {'value': 'daily_cases_per_million', 'label': 'Daily positive per million'},
-    {'value': 'daily_deaths', 'label': 'Daily deceased'},
-    {'value': 'daily_deaths_per_million', 'label': 'Daily deceased per million'},
-    {'value': 'daily_recovered', 'label': 'Daily recovered'},
-    {'value': 'daily_recovered_per_million', 'label': 'Daily recovered per million'},
-    {'value': 'daily_cases_smoothed',
-     'label': 'Daily positive (7-days smoothing)'},
-    {'value': 'daily_cases_smoothed_per_million',
-     'label': 'Daily positive per million (7-days smoothing)'},
-    {'value': 'daily_deaths_smoothed',
-     'label': 'Daily deceased (7-days smoothing)'},
-    {'value': 'daily_deaths_smoothed_per_million',
-     'label': 'Daily deceased per million (7-days smoothing)'},
-    {'value': 'daily_recovered_smoothed',
-     'label': 'Daily recovered (7-days smoothing)'},
-    {'value': 'daily_recovered_smoothed_per_million',
-     'label': 'Daily recovered per million (7-days smoothing)'},
-    {'value': 'total_cases_change', 'label': 'Smoothed change in daily new cases'},
-    {'value': 'total_deaths_change', 'label': 'Smoothed change in daily new deceased'},
-    {'value': 'CumulativePositive', 'label': 'Total positive'},
-    {'value': 'CumulativePositive_per_million', 'label': 'Total positive per million'},
-    {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
-    {'value': 'CumulativeDeceased_per_million', 'label': 'Total deceased per million'},
-    {'value': 'CumulativeRecovered', 'label': 'Total recovered'},
-    {'value': 'CumulativeRecovered_per_million', 'label': 'Total recovered per million'},
-    {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
-    {'value': 'CurrentlyPositive_per_million', 'label': 'Currently positive per million'},
-    {'value': 'r0', 'label': 'Reproductivity number R0'}
-]
 
 table_columns = [
     {'name': 'Continent', 'id': 'continent',
@@ -125,6 +103,43 @@ table_columns = [
     {'name': 'R0', 'id': 'r0',
      'hideable': True, 'type': 'numeric'}
      ]
+
+
+# Used in the time series of EU aggregated variables
+variable_options_eu = [
+    {'value': 'daily_cases', 'label': 'Daily positive'},
+    {'value': 'daily_cases_per_million', 'label': 'Daily positive per million'},
+    {'value': 'daily_deaths', 'label': 'Daily deceased'},
+    {'value': 'daily_deaths_per_million', 'label': 'Daily deceased per million'},
+    {'value': 'daily_recovered', 'label': 'Daily recovered'},
+    {'value': 'daily_recovered_per_million', 'label': 'Daily recovered per million'},
+    {'value': 'daily_cases_smoothed',
+     'label': 'Daily positive (7-days smoothing)'},
+    {'value': 'daily_cases_smoothed_per_million',
+     'label': 'Daily positive per million (7-days smoothing)'},
+    {'value': 'daily_deaths_smoothed',
+     'label': 'Daily deceased (7-days smoothing)'},
+    {'value': 'daily_deaths_smoothed_per_million',
+     'label': 'Daily deceased per million (7-days smoothing)'},
+    {'value': 'daily_recovered_smoothed',
+     'label': 'Daily recovered (7-days smoothing)'},
+    {'value': 'daily_recovered_smoothed_per_million',
+     'label': 'Daily recovered per million (7-days smoothing)'},
+    {'value': 'total_cases_change', 'label': 'Smoothed change in daily new cases'},
+    {'value': 'total_deaths_change', 'label': 'Smoothed change in daily new deceased'},
+    {'value': 'CumulativePositive', 'label': 'Total positive'},
+    {'value': 'CumulativePositive_per_million', 'label': 'Total positive per million'},
+    {'value': 'CumulativeDeceased', 'label': 'Total deceased'},
+    {'value': 'CumulativeDeceased_per_million', 'label': 'Total deceased per million'},
+    {'value': 'CumulativeRecovered', 'label': 'Total recovered'},
+    {'value': 'CumulativeRecovered_per_million', 'label': 'Total recovered per million'},
+    {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
+    {'value': 'CurrentlyPositive_per_million', 'label': 'Currently positive per million'},
+    {'value': 'r0', 'label': 'Reproductivity number R0'},
+    {'value': 'IntensiveCare', 'label': 'Intensive Care patients'},
+    {'value': 'Hospitalized', 'label': 'Hospitalisations'}
+
+]
 
 
 table_columns_eu = [
@@ -169,6 +184,7 @@ table_columns_eu = [
     {'id': 'CurrentlyPositive_per_million',
         'name': 'Currently positive per million', 'hideable': True, 'type': 'numeric'} 
      ]
+
 
 plot_opts = {
     'daily_cases':{'color_continuous_scale':"YlOrRd", 'range_color':(0, 5000)},
@@ -215,15 +231,16 @@ plot_opts_global = {
 }
 
 
-def get_last_valid_data(df, grouper='location', variable='daily_cases', 
+def get_last_valid_data(df, grouper='location', variable='daily_cases',
                         time_window='30d', time_variable='Date'):
     '''Get last valid data (no NaN) for variable in time over a grouped dataframe
     with the constraint that it has to be dated between today and today-time_window
     to exclude really old data.'''
     df = df.set_index(time_variable)
     today = pd.to_datetime('today')
+
     def selector(group, today, time_window):
-        date_last = group[variable].last_valid_index() # this is a datetime
+        date_last = group[variable].last_valid_index()
         try:
             if today - date_last < pd.to_timedelta(time_window):
                 return group[group.index == date_last]
@@ -231,17 +248,6 @@ def get_last_valid_data(df, grouper='location', variable='daily_cases',
             return None
 
     return df.groupby(grouper).apply(selector, today=today, time_window=time_window).reset_index(level=time_variable)
-
-def compute_r0_old(group, window=7, variable='new_cases'):
-  # Compute R0 using RKI method, old method, really slow,
-  # kept only for reference, will be removed
-  r0 = []
-  for t in range((2 * window) - 1, len(group)):
-    r0.append(group.iloc[t - window + 1:t + 1][variable].sum() /
-              group.iloc[t - (2 * window) + 1:t - window + 1][variable].sum())
-
-  return pd.DataFrame(data={'r0': r0},
-                      index=group.index[(2 * window) - 1:])
 
 
 def compute_r0(group, window=7):
@@ -462,8 +468,10 @@ def add_markers_end(fig):
     trace['line'] = None
     trace['mode'] = 'markers'
     trace['showlegend'] = False
-    trace['x'] = np.array([trace_old['x'][-1]])
-    trace['y'] = np.array([trace_old['y'][-1]])
+    last_x = [i for i in trace_old['x'] if i][-1]
+    last_y = [i for i in trace_old['y'] if i][-1]
+    trace['x'] = np.array([last_x])
+    trace['y'] = np.array([last_y])
 
     fig.add_trace(trace)
 
@@ -507,12 +515,17 @@ def make_fig_fit_base(df):
 
 
 def make_fig_map_base(df, variable):
-    out = get_last_valid_data(df, variable='new_cases', time_variable='date')
+    out = get_last_valid_data(df, variable=variable, time_variable='date')
+
+    if variable in plot_opts_global:
+        add_plot_opts = plot_opts_global[variable]
+    else:
+        add_plot_opts = {}
 
     fig = px.choropleth(out, locations="iso_code",
                       color=variable,
                       hover_data=['location', 'date'],
-                      **plot_opts_global[variable])
+                      **add_plot_opts)
     fig.update_geos(projection_type="kavrayskiy7")
     fig.update_layout(coloraxis_colorbar=dict(title=""),
                     height=500,
@@ -526,6 +539,11 @@ def make_fig_map_weekly(df, variable):
     with open('NUTS_RG_10M_2021_4326.geojson') as file:
         geojson = json.load(file)
 
+    if variable in plot_opts_global:
+        add_plot_opts = plot_opts[variable]
+    else:
+        add_plot_opts = {}
+
     # Filter geojson to retain only the regions that we need, thus speeding up the plotting
     countries_list_df = df.NUTS.unique()
     geojson_filtered = [feature for feature in geojson['features']
@@ -535,7 +553,7 @@ def make_fig_map_weekly(df, variable):
                         'type': 'FeatureCollection',
                         'features': geojson_filtered}
 
-    out = get_last_valid_data(df, variable='daily_cases', time_variable='Date')
+    out = get_last_valid_data(df, variable=variable, time_variable='Date')
 
     fig = px.choropleth_mapbox(out, hover_data=['location', 'Date'],
                              geojson=geojson_filtered_2,
@@ -546,7 +564,7 @@ def make_fig_map_weekly(df, variable):
                              center={"lat": 53, "lon": 3.1791},
                              opacity=0.7,
                              title='',
-                             **plot_opts[variable])
+                             **add_plot_opts)
 
     fig.update_geos(showcountries=False, showcoastlines=True,
                   showland=False, fitbounds="locations")

@@ -6,10 +6,20 @@ import dash_html_components as html
 
 def get_aggregated_tab(dropdown_options):
     return [
-              html.Div('Click on the legend items to show/hide countries and/or select the countries from the dropdown.'),
-              html.Br(),
-              html.Div(
-                  [dcc.Dropdown(
+              html.Div([
+                  html.Div('Select variable to be shown in the map and timeseries'),
+                  dcc.Dropdown(
+                      id='variable-dropdown',
+                      options=variable_options,
+                      value="total_cases_change"),
+                  dcc.Graph(
+                      id='figure-map-world',
+                      style={'width': '800'}
+                  )],
+                  style={'display': 'inline-block', 'padding': 10, 'textAlign': 'center'}),
+              html.Div([
+                  html.Div('Select the countries to be shown and the start date for the timeseries'),
+                  dcc.Dropdown(
                                 id='country-dropdown-multi',
                                 options=dropdown_options,
                                 value=['Germany', 'Italy', 'France',
@@ -23,67 +33,64 @@ def get_aggregated_tab(dropdown_options):
                                       date='2020-04-01',
                                       display_format='DD MMM YYYY',
                                       placeholder='Starting date', 
-                                      style={'padding': '2px'})
-                    ]),
-]),
-              html.Div(id='intermediate-value', style={'display': 'none'}),
+                                      style={'padding': '2px'}),
+                  dcc.Checklist(
+                                id='log_y_on',
+                                options=[
+                                    {'label': 'Log Y Axis', 'value': 'log_y'}
+                                ],
+                                value='')]),
+                ]),
               html.Div(
                   dcc.Graph(
                       id='figure-cases',
                       style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
-              html.Div(
-                  dcc.Graph(
-                      id='figure-cumulative',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
-              html.Div(
-                  dcc.Graph(
-                      id='figure-cumulative-2',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
-              html.Div(
-                  dcc.Graph(
-                      id='figure-cumulative-3',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
-              html.Div(
-                  dcc.Graph(
-                      id='figure-increment',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
-              html.Div(
-                  dcc.Graph(
-                      id='figure-r0',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10}),
+                  ), style={'display': 'inline-block', 'padding': 10})
           ]
 
 
 def get_aggregated_eu_tab(region_options):
-    return [  
-            html.Div(
-                  [
+    return [
+           html.Div([
+                  html.Div('Select variable to be shown in the map and timeseries'),
+                  dcc.Dropdown(
+                          id='variable-dropdown-eu',
+                          options=variable_options_eu,
+                          value="total_cases_change"),
+                  dcc.Graph(
+                      id='figure-map-eu',
+                      style={'width': '800'}),
+                  ],
+                  style={'display': 'inline-block', 'padding': 10, 'textAlign': 'center'}),  
+            html.Div([
+                    html.Div('Select the regions to be shown'),
                     dcc.Dropdown(
                         id='region-dropdown-eu',
                         options=region_options,
                         value=['Italy | Lombardia', 'Italy | Toscana'],
-                        multi=True, style={'width': '800px', 'padding':'2px'}),
-                    dcc.Dropdown(
-                        id='variable-dropdown-eu',
-                        options=variable_options_eu,
-                        value='total_cases_change',
-                        multi=False, style={'width': '800px', 'padding':'2px'}),
-                    dcc.Graph(
+                        multi=True, style={'width': '800px', 'padding': '2px'})
+                  ]),
+            html.Div(
+              dcc.Graph(
                         id='figure-eu',
-                        style={'width': '800'}),
-                  ], 
-                  style={'display': 'inline-block', 'padding': 10}),
-             html.Div(
-                      dcc.Graph(
-                                id='figure-r0-eu',
-                                style={'width': '800'}),
-                  style={'display': 'inline-block', 'padding': 10}),
+                        style={'width': '800'}
+                        ), style={'display': 'inline-block', 'padding': 10})
+                  ]
+
+def get_hosp_tab(dropdown_options, dropdown_options_2, region_options):
+    return [
+            html.Div(
+              [
+                dcc.Dropdown(
+                        id='country-dropdown-3',
+                        options=dropdown_options_2,
+                        value='Italy',
+                        multi=False, style={'width': '800px'}),
+                dcc.Graph(
+                        id='figure-hospitalization',
+                        style={'width': '800'}
+                  )
+              ], style={'display': 'inline-block', 'padding': 10}),
              html.Div(
               [
                 dcc.Dropdown(
@@ -93,46 +100,6 @@ def get_aggregated_eu_tab(region_options):
                         multi=False, style={'width': '800px'}),
                 dcc.Graph(
                         id='figure-hospitalization-eu',
-                        style={'width': '800'}
-                  )
-              ], style={'display': 'inline-block', 'padding': 10})
-                  ]
-
-def get_testing_tab(dropdown_options, dropdown_options_2):
-    return [
-            # html.Div(['Testing data is weekly. Here is an explanation of the parameters: ',
-            #       html.Ul(children=[
-            #                         html.Li('positivity rate - 100 x Number of new confirmed cases/number of tests'),
-            #                         html.Li('tests done - total tests performed in a specific country'),
-            #                         html.Li('testing rate - Testing rate per 100 000 population')])]),
-            html.Div('Hospitalization data are either weekly or daily depending on the country selected in the dropdown'),
-            html.Div(
-                  [
-                    dcc.Dropdown(
-                        id='country-dropdown-testing',
-                        options=dropdown_options,
-                        value=['Austria','Germany'],
-                        multi=True, style={'width': '800px', 'padding':'4px'}),
-                    dcc.Dropdown(
-                        id='variable-dropdown-2',
-                        options=variable_options_2,
-                        value='positive_rate',
-                        multi=False, style={'width': '800px', 'padding':'4px'}),
-                    dcc.Graph(
-                        id='figure-testing',
-                        style={'width': '800'}
-                  )
-                  ], 
-                  style={'display': 'inline-block', 'padding': 10}),
-            html.Div(
-              [
-                dcc.Dropdown(
-                        id='country-dropdown-3',
-                        options=dropdown_options_2,
-                        value='France',
-                        multi=False, style={'width': '800px'}),
-                dcc.Graph(
-                        id='figure-hospitalization',
                         style={'width': '800'}
                   )
               ], style={'display': 'inline-block', 'padding': 10})
@@ -156,7 +123,7 @@ def get_forecast_tab(dropdown_options):
                       dcc.Dropdown(
                         id='country-dropdown-1',
                         options=dropdown_options,
-                        value='Austria'),
+                        value='Italy'),
                       dcc.Graph(
                         id='figure-fit-1',
                         style={'width': '800'}
@@ -174,32 +141,6 @@ def get_forecast_tab(dropdown_options):
                   style={'display': 'inline-block', 'padding': 10})
           ]
 
-def get_maps_tab():
-    return [
-            html.Div('Shown is the geographical distribution of many variables. \
-                      You can select the variable to be shown using the dropdown.\
-                      Only the most recent data for that variable is shown in the map.'),
-            html.Div([
-                  dcc.Dropdown(
-                      id='variable-dropdown',
-                      options=variable_options,
-                      value="total_cases_change"),
-                  dcc.Graph(
-                      id='figure-map-world',
-                      style={'width': '800'}
-                  )],
-                  style={'display': 'inline-block', 'padding': 10}),
-            html.Div([
-                      dcc.Dropdown(
-                              id='variable-dropdown-map-eu',
-                              options=variable_options_eu,
-                              value="total_cases_change"),
-                      dcc.Graph(
-                          id='figure-map-eu',
-                          style={'width': '800', 'padding-bottom': '10px'}),
-                      ],
-                  style={'display': 'inline-block'}),
-          ]
 
 def get_table_tab(table_data, table_data_eu):
     df = table_data["df"]

@@ -20,6 +20,6 @@ tags = [
         },
         {
             'property': 'og:url',
-            'content': 'http://breeze.guidocioni.it/covid'
+            'content': 'https://breeze.guidocioni.it/covid'
         }
 ]
