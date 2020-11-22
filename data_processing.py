@@ -40,7 +40,7 @@ def read_jrc():
                      index_col=[0])
 
     df = df.sort_index()
-    pop = pd.read_csv('nuts_europe_population.csv')
+    pop = pd.read_csv('/home/covid_webapp/nuts_europe_population.csv')
 
     # cannot be negative 
     for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered', 'CurrentlyPositive']:
@@ -97,17 +97,13 @@ def read_hospitalization():
 
 try:
     df_owid = read_owid().to_pickle(TMP_FOLDER + 'df_owid.pickle')
-except:
-    print("Error in downloading/processing df_owid")
+except Exception as e: print(e)
 
 try:
     df_jrc = read_jrc().to_pickle(TMP_FOLDER + 'df_jrc.pickle')
-except:
-    print("Error in downloading/processing df_jrc")
-
+except Exception as e: print(e)
 
 try:
     df_hospitalization = read_hospitalization().to_pickle(
         TMP_FOLDER + 'df_hospitalization.pickle')
-except:
-    print("Error in downloading/processing df_hospitalization")
+except Exception as e: print(e)
