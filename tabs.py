@@ -7,45 +7,44 @@ import dash_html_components as html
 def get_aggregated_tab(dropdown_options):
     return [
               html.Div([
-                  html.Div('Select variable to be shown in the map and timeseries'),
+                  html.Div('Select variable to be shown in the map and timeseries',
+                     style={'width': '800px'}),
                   dcc.Dropdown(
                       id='variable-dropdown',
                       options=variable_options,
-                      value="total_cases_change"),
+                      value="total_cases_change",
+                      style={'width': '800px'}),
                   dcc.Graph(
                       id='figure-map-world',
-                      style={'width': '800'}
                   )],
-                  style={'display': 'inline-block', 'padding': 10, 'textAlign': 'center'}),
+                  style={'margin-bottom': '20px', 'text-align': 'center', 'display': 'inline-block'}),
               html.Div([
                   html.Div('Select the countries to be shown and the start date for the timeseries'),
                   dcc.Dropdown(
                                 id='country-dropdown-multi',
                                 options=dropdown_options,
-                                value=['Germany', 'Italy', 'France',
-                                       'Spain', 'Portugal'],
-                                multi=True, style={'width': '800px' , 'padding': '2px'}),
+                                value=['Germany', 'Italy', 'France', 'Spain'],
+                                multi=True, style={'width': '400px', 'margin-right': '15px', 'display': 'inline-block'}),
                   html.Div(['Start date:  ',
                   dcc.DatePickerSingle(
                                       id='date-picker-single',
                                       min_date_allowed='2019-12-31',
                                       max_date_allowed=date.today().strftime('%Y-%m-%d'),
-                                      date='2020-04-01',
+                                      date='2020-07-01',
                                       display_format='DD MMM YYYY',
-                                      placeholder='Starting date', 
-                                      style={'padding': '2px'}),
+                                      placeholder='Starting date',
+                                      style={'margin-right': '5px', 'width': '50px', 'display': 'inline-block'}),
                   dcc.Checklist(
                                 id='log_y_on',
                                 options=[
                                     {'label': 'Log Y Axis', 'value': 'log_y'}
                                 ],
-                                value='')]),
-                ]),
-              html.Div(
+                                value='', style={'margin-left': '80px', 'width': '100px', 'display': 'inline-block'}),], style={'display': 'inline-block'}),
                   dcc.Graph(
                       id='figure-cases',
-                      style={'width': '800'}
-                  ), style={'display': 'inline-block', 'padding': 10})
+                      style={'width': '800px'}
+                  )
+                ], style={'display': 'inline-block', 'text-align': 'center'}),
           ]
 
 
@@ -59,22 +58,30 @@ def get_aggregated_eu_tab(region_options):
                           value="total_cases_change"),
                   dcc.Graph(
                       id='figure-map-eu',
-                      style={'width': '800'}),
+                      style={'width': '800px'}),
                   ],
-                  style={'display': 'inline-block', 'padding': 10, 'textAlign': 'center'}),  
+                  style={'margin-bottom': '20px', 'text-align': 'center', 'display': 'inline-block'}),
             html.Div([
-                    html.Div('Select the regions to be shown'),
+                    html.Div('Select the regions to be shown and the start date for the timeseries'),
                     dcc.Dropdown(
                         id='region-dropdown-eu',
                         options=region_options,
                         value=['Italy | Lombardia', 'Italy | Toscana'],
-                        multi=True, style={'width': '800px', 'padding': '2px'})
-                  ]),
-            html.Div(
-              dcc.Graph(
-                        id='figure-eu',
-                        style={'width': '800'}
-                        ), style={'display': 'inline-block', 'padding': 10})
+                        multi=True, style={'width': '450px', 'margin-right': '15px', 'display': 'inline-block'}),
+                  html.Div(['Start date:  ',
+                  dcc.DatePickerSingle(
+                                      id='date-picker-single-2',
+                                      min_date_allowed='2019-12-31',
+                                      max_date_allowed=date.today().strftime('%Y-%m-%d'),
+                                      date='2020-07-01',
+                                      display_format='DD MMM YYYY',
+                                      placeholder='Starting date',
+                                      style={'margin-right': '5px', 'width': '50px', 'display': 'inline-block'}),], style={'display': 'inline-block'}),
+                    dcc.Graph(
+                              id='figure-eu',
+                              style={'width': '800px'}
+                              )
+                  ], style={'display': 'inline-block', 'text-align': 'center'}),
                   ]
 
 def get_hosp_tab(dropdown_options, dropdown_options_2, region_options):

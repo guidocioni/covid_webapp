@@ -39,6 +39,7 @@ def serve_layout():
         html.P('Data is obtained from the European Center for Disease Monitoring (ECDC)'),
         html.P('Although new data is downloaded and updated every 2 hours in this dashboard it may not reflect any change in the source.\
          Moreover data during the weekend and in the morning may be incomplete.'),
+        html.Hr(),
         #
         dcc.Tabs(parent_className='custom-tabs',
                  className='custom-tabs-container',
@@ -89,12 +90,15 @@ def make_fig_map_weekly_europe(variable):
 
 @app.callback(
     Output('figure-eu', 'figure'),
-    [Input('region-dropdown-eu', 'value'), Input('variable-dropdown-eu', 'value')])
-def make_fig_eu(regions, variable):
+    [Input('region-dropdown-eu', 'value'), 
+     Input('variable-dropdown-eu', 'value'),
+     Input('date-picker-single-2', 'date'),])
+def make_fig_eu(regions, variable, date_value):
     '''Give as input a threshold for the cumulative cases in the most updated
     timestep to filter out countries that do not have many cases.'''
     df = read_jrc()
     df = df.loc[df.location.isin(regions)]
+    df = df.loc[df.Date > date_value]
 
     for v in variable_options_eu:
       if v['value'] == variable:
