@@ -2,8 +2,10 @@ from utils import compute_r0
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import os
 
 TMP_FOLDER = '/tmp/'
+MAIN_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
 ''' In this script we perform the preprocessing of data shown in the dashboard in the background
 so that the user doesn't have to wait for computatin when opening the dashboard.
@@ -40,7 +42,7 @@ def read_jrc():
                      index_col=[0])
 
     df = df.sort_index()
-    pop = pd.read_csv('/home/covid_webapp/nuts_europe_population.csv')
+    pop = pd.read_csv(MAIN_FOLDER+'/nuts_europe_population.csv')
 
     # cannot be negative 
     for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered', 'CurrentlyPositive']:
