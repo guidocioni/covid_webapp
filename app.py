@@ -42,7 +42,7 @@ def serve_layout():
         html.Hr(),
         #
         dcc.Tabs(parent_className='custom-tabs',
-                 className='custom-tabs-container',
+                 # className='custom-tabs-container',
                  children=[
                     dcc.Tab(label='Daily overview',
                              className='custom-tab',

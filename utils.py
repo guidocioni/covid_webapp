@@ -10,7 +10,8 @@ from dash_table import DataTable
 TIMEOUT = 1800  # Force cache update every hour
 threshold_chosen = 10000
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
+                        'https://fonts.googleapis.com/css?family=Open+Sans:300,400,700']
 
 # Used in the world map
 variable_options = [
@@ -513,6 +514,7 @@ def add_markers_end(fig):
 
 def apply_base_layout(fig, title):
   fig.update_layout(
+      font=dict(family='Open Sans', color='#737373'),
       template='plotly_white',
       legend_orientation="h",
       width=800,
@@ -520,7 +522,7 @@ def apply_base_layout(fig, title):
       title=title,
       xaxis=dict(title=''),
       yaxis=dict(title=''),
-      margin=dict(b=0, t=30, l=10),
+      margin=dict(b=0, t=30, l=0, r=10),
       legend=dict(
           title=dict(text=''),
           font=dict(
@@ -565,7 +567,7 @@ def make_fig_map_base(df, variable):
     fig.update_layout(coloraxis_colorbar=dict(title=""),
                     height=500,
                     width=800,
-                    margin={"r": 0, "t": 50, "l": 0, "b": 0})
+                    margin={"r": 10, "t": 20, "l": 0, "b": 0})
 
     return fig
 
@@ -603,7 +605,7 @@ def make_fig_map_weekly(df, variable):
 
     fig.update_geos(showcountries=False, showcoastlines=True,
                   showland=False, fitbounds="locations")
-    fig.update_layout(margin={"r": 0, "t": 50, "l": 0, "b": 0},
+    fig.update_layout(margin={"r": 0, "t": 20, "l": 0, "b": 0},
                     coloraxis_colorbar=dict(title=""),
                     height=500, width=800)
 
@@ -651,17 +653,18 @@ def make_dash_table(table_data, id):
                                     'total_deaths_change', 'CumulativePositive', 'CumulativePositive_per_million',
                                     'CumulativeDeceased', 'CumulativeDeceased_per_million', 'CumulativeRecovered',
                                     'CumulativeRecovered_per_million', 'CurrentlyPositive', 'CurrentlyPositive_per_million',
-                                    'daily_deaths','total_tests','new_tests','icu_patients','icu_patients_per_million',
+                                    'total_tests','new_tests','icu_patients','icu_patients_per_million',
                                     'hosp_patients', 'hosp_patients_per_million', 'weekly_icu_admissions',
                                     'weekly_icu_admissions_per_million', 'weekly_hosp_admissions', 'weekly_hosp_admissions_per_million',
                                     'hospital_beds_per_thousand', 'new_deaths_per_million', 'new_cases_per_million'
                                     ],
+                    page_size=500,
                     virtualization=True,
                     style_cell={'textAlign': 'left', 'minWidth': '100px', 
-                                'width': '100px', 'maxWidth': '100px', 'font-family': 'verdana',
+                                'width': '100px', 'maxWidth': '100px', 'font-family': 'Open Sans',
                                 'fontSize':13,},
                     fixed_rows={'headers': True},
-                    style_table={'height': 600, 'width': 700},
+                    style_table={'height': 600, 'width': 700, 'margin': 10},
                     filter_action="native",
                     sort_action="native",
                     sort_mode="multi",
