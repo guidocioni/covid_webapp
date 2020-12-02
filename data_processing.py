@@ -29,12 +29,13 @@ def read_owid():
         "new_deaths_smoothed_per_million"].transform(lambda x: x.diff().rolling(3).mean())
     df['positive_rate'] = df['positive_rate'] * 100.
 
-    # df['r0'] = df.groupby("location").new_cases.transform(compute_r0)
-    df = process_compute_rt(df)
+    df = process_compute_rt(df.reset_index(),
+            total_cases_var='total_cases', new_cases_var='new_cases',
+            time_var='date', location_var='location')
 
     df = df.replace([np.inf, -np.inf], np.nan)
 
-    return df.reset_index()
+    return df
 
 
 def read_jrc():
@@ -71,12 +72,13 @@ def read_jrc():
 
     df['location'] = df['CountryName'] + ' | ' + df['Region']
 
-    # df['r0'] = df.groupby("location").daily_cases.transform(compute_r0)
-    df = process_compute_rt(df)
+    df = process_compute_rt(df.reset_index(),
+            total_cases_var='CumulativePositive', new_cases_var='daily_cases',
+            time_var='Date', location_var='location')
 
     df = df.replace([np.inf, -np.inf], np.nan)
 
-    df = df.reset_index().merge(pop, left_on='NUTS', right_on='nuts_code').drop(columns='nuts_code')
+    df = df.merge(pop, left_on='NUTS', right_on='nuts_code').drop(columns='nuts_code')
 
     for column in ['CumulativePositive', 'CumulativeDeceased', 'CumulativeRecovered',
        'CurrentlyPositive', 'daily_cases', 'daily_deaths',
