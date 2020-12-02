@@ -59,7 +59,7 @@ variable_options = [
     {'value': 'stringency_index', 'label': 'Stringency Index'},
     {'value': 'total_cases_change', 'label': 'Cases change'},
     {'value': 'total_deaths_change', 'label': 'Deceased change'},
-    {'value': 'r0', 'label': 'Reproductivity number R0'},
+    {'value': 'R', 'label': 'Reproductivity number Rt'},
 ]
 
 # Used in the test tab
@@ -136,7 +136,7 @@ table_columns = [
      'hideable': True, 'type': 'numeric'},
     {'name': 'Hospital beds per thousand', 'id': 'hospital_beds_per_thousand',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'R0', 'id': 'r0',
+    {'name': 'Rt', 'id': 'R',
      'hideable': True, 'type': 'numeric'}
      ]
 
@@ -171,7 +171,7 @@ variable_options_eu = [
     {'value': 'CumulativeRecovered_per_million', 'label': 'Total recovered per million'},
     {'value': 'CurrentlyPositive', 'label': 'Currently positive'},
     {'value': 'CurrentlyPositive_per_million', 'label': 'Currently positive per million'},
-    {'value': 'r0', 'label': 'Reproductivity number R0'},
+    {'value': 'R', 'label': 'Reproductivity number Rt'},
     {'value': 'IntensiveCare', 'label': 'Intensive Care patients'},
     {'value': 'Hospitalized', 'label': 'Hospitalisations'}
 
@@ -189,7 +189,7 @@ table_columns_eu = [
      'hideable': True, 'type': 'numeric'},
     {'name': 'Change of daily cases', 'id': 'total_cases_change',
      'hideable': True, 'type': 'numeric'},
-    {'name': 'R0', 'id': 'r0',
+    {'name': 'Rt', 'id': 'R',
      'hideable': True, 'type': 'numeric'},
     {'id': 'daily_cases_per_million', 'name': 'Daily positive per million',
         'hideable': True, 'type': 'numeric'},
@@ -451,7 +451,7 @@ def figure_layout(title, country, day_last_string,
       height=500,
       width=800,
       margin=dict(r=5, b=20, t=30, l=10),
-      font=dict(family='arial'),
+      # font=dict(family='Open Sans', color='#737373'),
       yaxis=dict(title='Cumulative Cases (%s)' % country),
       legend=dict(x=0.75, y=0.1),
       annotations=[
@@ -643,6 +643,7 @@ def make_fig_hospitalization_base(df, time_variable, value_variable, color_varia
 
 def make_dash_table(table_data, id):
     return DataTable(id=id,
+                    css={'selector':'.dash-spreadsheet-menu','rule':'position:absolute;bottom:-30px'},
                     columns=table_data['columns'],
                     data=table_data['data'],
                     hidden_columns=['total_deaths_change', 'total_cases', 'total_deaths',

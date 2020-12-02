@@ -211,15 +211,11 @@ def get_table_tab(table_data, table_data_eu):
               html.Div([
                         html.H5('Countries in the World', style={'float':'right','margin': 10}),
                         make_dash_table(table_data, id='table')],
-                        style={'display': 'inline-block', 'margin': '10px',
-                               'border': '1px solid lightgrey',
-                              'border-radius': '4px'}),
+                        style={'display': 'inline-block', 'margin': '10px'}),
               #html.Div('The worst regions in Europe in the latest update'),
               html.Div([
                         html.H5('Regions in Europe', style={'float':'right','padding-right': 10}),
                         make_dash_table(table_data_eu, id='table-eu')], 
-                        style={'display': 'inline-block', 'margin': '10px',
-                               'border': '1px solid lightgrey',
-                              'border-radius': '4px'}),
+                        style={'display': 'inline-block', 'margin': '10px'}),
 
             ]

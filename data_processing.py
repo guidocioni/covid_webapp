@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 import os
+from rt_kalman import process_compute_rt
 
 TMP_FOLDER = '/tmp/'
 MAIN_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -28,7 +29,8 @@ def read_owid():
         "new_deaths_smoothed_per_million"].transform(lambda x: x.diff().rolling(3).mean())
     df['positive_rate'] = df['positive_rate'] * 100.
 
-    df['r0'] = df.groupby("location").new_cases.transform(compute_r0)
+    # df['r0'] = df.groupby("location").new_cases.transform(compute_r0)
+    df = process_compute_rt(df)
 
     df = df.replace([np.inf, -np.inf], np.nan)
 
@@ -69,7 +71,8 @@ def read_jrc():
 
     df['location'] = df['CountryName'] + ' | ' + df['Region']
 
-    df['r0'] = df.groupby("location").daily_cases.transform(compute_r0)
+    # df['r0'] = df.groupby("location").daily_cases.transform(compute_r0)
+    df = process_compute_rt(df)
 
     df = df.replace([np.inf, -np.inf], np.nan)
 

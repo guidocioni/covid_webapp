@@ -35,11 +35,17 @@ def serve_layout():
         region_eu.append({"label": cnt, "value": cnt})
 
     return html.Div(children=[
-        html.Div([html.H1('COVID-19 Monitoring', style={'display': 'inline'}), html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y') )]),
-        html.P('Data is obtained from the European Center for Disease Monitoring (ECDC)'),
-        html.P('Although new data is downloaded and updated every 2 hours in this dashboard it may not reflect any change in the source.\
-         Moreover data during the weekend and in the morning may be incomplete.'),
-        html.Hr(),
+        # html.Div([html.H1('COVID-19 Monitoring'), 
+        #           html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y'),
+        #             )]),
+        html.H1(children=[
+            html.Span('COVID-19 Monitoring', style={'left': 0, 'position': 'absolute'}),
+            html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y'))
+            ], style={'text-align':'right', 'position':'relative'}),
+        # html.P('Data is obtained from the European Center for Disease Monitoring (ECDC)'),
+        # html.P('Although new data is downloaded and updated every 2 hours in this dashboard it may not reflect any change in the source.\
+        #  Moreover data during the weekend and in the morning may be incomplete.'),
+        html.Br(),
         #
         dcc.Tabs(parent_className='custom-tabs',
                  # className='custom-tabs-container',
@@ -71,7 +77,7 @@ def serve_layout():
                              selected_className='custom-tab--selected',
                              children=get_forecast_tab(dropdown_options)),
                  ]),
-        html.Div(html.A('Created by Guido Cioni', href='http://guidocioni.altervista.org/nuovosito/'))
+        html.Div([html.A('Created by Guido Cioni', href='http://guidocioni.altervista.org/nuovosito/')])
     ],
         style={'width': '100%', 'display': 'inline-block'})
 
