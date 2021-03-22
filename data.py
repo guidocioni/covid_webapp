@@ -1,7 +1,7 @@
 import pandas as pd
 from utils import table_columns, table_columns_eu, get_last_valid_data
 
-TMP_FOLDER='/tmp/'
+TMP_FOLDER = '/tmp/'
 
 
 def read_owid():
@@ -51,7 +51,7 @@ def make_table_data():
     df = filter_data(start_date='2020-03-15')
 
     df = get_last_valid_data(df, variable='new_cases', time_variable='date')\
-    .round(3).sort_values(by="new_cases", ascending=False)
+        .round(3).sort_values(by="new_cases", ascending=False)
 
     data = df.to_dict('records')
 
@@ -64,11 +64,10 @@ def make_table_data_eu():
     df = read_jrc()
     df = df[df.Region != "NOT SPECIFIED"]
     df = get_last_valid_data(df, variable='daily_cases', time_variable='Date')\
-    .round(3).sort_values(by="daily_cases", ascending=False)
+        .round(3).sort_values(by="daily_cases", ascending=False)
 
     data = df.to_dict('records')
 
     return {'columns': table_columns_eu,
             'data': data,
             'df': df}
-

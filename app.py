@@ -2,8 +2,11 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from utils import *
-from data import *
+from utils import external_stylesheets, make_fig_map_weekly, variable_options_eu,\
+    timeseries_plot, make_fig_hospitalization_base, make_fig_map_base, make_fig_fit_base,\
+    variable_options
+from data import read_owid, read_jrc, read_hospitalization,\
+    filter_data, get_countries_list, make_table_data, make_table_data_eu
 from meta import tags
 from tabs import get_aggregated_tab, get_hosp_tab,\
     get_forecast_tab, get_table_tab,\
@@ -35,13 +38,15 @@ def serve_layout():
         region_eu.append({"label": cnt, "value": cnt})
 
     return html.Div(children=[
-        # html.Div([html.H1('COVID-19 Monitoring'), 
+        # html.Div([html.H1('COVID-19 Monitoring'),
         #           html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y'),
         #             )]),
         html.H1(children=[
-            html.Span('COVID-19 Monitoring', style={'left': 0, 'position': 'absolute'}),
-            html.H5('Last update: %s' % filter_data().date.max().strftime('%a %d %b %Y'))
-            ], style={'text-align':'right', 'position':'relative'}),
+            html.Span('COVID-19 Monitoring',
+                      style={'left': 0, 'position': 'absolute'}),
+            html.H5('Last update: %s' %
+                    filter_data().date.max().strftime('%a %d %b %Y'))
+        ], style={'text-align': 'right', 'position': 'relative'}),
         # html.P('Data is obtained from the European Center for Disease Monitoring (ECDC)'),
         # html.P('Although new data is downloaded and updated every 2 hours in this dashboard it may not reflect any change in the source.\
         #  Moreover data during the weekend and in the morning may be incomplete.'),
@@ -50,7 +55,7 @@ def serve_layout():
         dcc.Tabs(parent_className='custom-tabs',
                  # className='custom-tabs-container',
                  children=[
-                    dcc.Tab(label='Daily overview',
+                     dcc.Tab(label='Daily overview',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_table_tab(make_table_data(), make_table_data_eu())),
@@ -69,15 +74,16 @@ def serve_layout():
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_hosp_tab(dropdown_options,
-                                                    dropdown_options_2,
-                                                    region_eu)),
+                                                   dropdown_options_2,
+                                                   region_eu)),
                      # -----------------------------------------------------  #
                      dcc.Tab(label='Forecast',
                              className='custom-tab',
                              selected_className='custom-tab--selected',
                              children=get_forecast_tab(dropdown_options)),
                  ]),
-        html.Div([html.A('Created by Guido Cioni', href='http://guidocioni.altervista.org/nuovosito/')])
+        html.Div([html.A('Created by Guido Cioni',
+                 href='http://guidocioni.altervista.org/nuovosito/')])
     ],
         style={'width': '100%', 'display': 'inline-block'})
 
@@ -96,9 +102,9 @@ def make_fig_map_weekly_europe(variable):
 
 @app.callback(
     Output('figure-eu', 'figure'),
-    [Input('region-dropdown-eu', 'value'), 
+    [Input('region-dropdown-eu', 'value'),
      Input('variable-dropdown-eu', 'value'),
-     Input('date-picker-single-2', 'date'),])
+     Input('date-picker-single-2', 'date'), ])
 def make_fig_eu(regions, variable, date_value):
     '''Give as input a threshold for the cumulative cases in the most updated
     timestep to filter out countries that do not have many cases.'''
@@ -107,8 +113,8 @@ def make_fig_eu(regions, variable, date_value):
     df = df.loc[df.Date > date_value]
 
     for v in variable_options_eu:
-      if v['value'] == variable:
-        title = v['label']
+        if v['value'] == variable:
+            title = v['label']
 
     fig = timeseries_plot(df,
                           time_variable="Date",
@@ -189,12 +195,12 @@ def make_fig_cases(countries, date_value, variable, log_y):
     '''Give as input a threshold for the cumulative cases in the most updated
     timestep to filter out countries that do not have many cases.'''
     df = filter_data(countries=countries,
-                       start_date=date_value)
+                     start_date=date_value)
 
     log_y_activated = False
 
     if log_y and (log_y[0] == 'log_y'):
-      log_y_activated = True
+        log_y_activated = True
 
     for v in variable_options:
         if v['value'] == variable:

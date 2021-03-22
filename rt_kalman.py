@@ -12,8 +12,8 @@ Filter (May 10, 2020). http://dx.doi.org/10.2139/ssrn.3581633
 '''
 
 
-def prepare_data(df, total_cases_var='total_cases', new_cases_var='new_cases',
-                 time_var='date', location_var='location'):
+def prepare_data(df, total_cases_var, new_cases_var,
+                 time_var, location_var):
     '''Add growth rate with different days delay to the dataset'''
     min_cases = 100
     # Values of (1 / gamma) used in constructing
@@ -99,7 +99,8 @@ def prepare_data(df, total_cases_var='total_cases', new_cases_var='new_cases',
     # due to data issues
     for days_infectious in days_infectious_list:
         gamma = 1 / float(days_infectious)
-        mask = (df['gr_infected_{}'.format(days_infectious)] >= gamma * (10 - 1))
+        mask = (df['gr_infected_{}'.format(days_infectious)]
+                >= gamma * (10 - 1))
         df.loc[mask, ['infected_{}'.format(days_infectious),
                       'gr_infected_{}'.format(days_infectious)]] = np.nan
 
@@ -115,7 +116,7 @@ def prepare_data(df, total_cases_var='total_cases', new_cases_var='new_cases',
     return df
 
 
-def estimate_R(y, gamma, n_start_values_grid = 0, maxiter = 200):
+def estimate_R(y, gamma, n_start_values_grid=0, maxiter=200):
     """Estimate basic reproduction number using
     Kalman filtering techniques
 
@@ -137,19 +138,19 @@ def estimate_R(y, gamma, n_start_values_grid = 0, maxiter = 200):
 
     """
     assert isinstance(n_start_values_grid, int), \
-      "n_start_values_grid must be an integer"
+        "n_start_values_grid must be an integer"
 
     assert isinstance(maxiter, int), \
-      "maxiter must be an integer"
+        "maxiter must be an integer"
 
     assert n_start_values_grid >= 0 and maxiter > 0, \
-      "n_start_values_grid and max_iter must be positive"
+        "n_start_values_grid and max_iter must be positive"
 
     assert isinstance(y, np.ndarray), \
-      "y must be a numpy array"
+        "y must be a numpy array"
 
     assert y.ndim == 1, \
-      "y must be a vector"
+        "y must be a vector"
 
     # Setup model instance
     mod_ll = sm.tsa.UnobservedComponents(y, 'local level')
@@ -158,7 +159,8 @@ def estimate_R(y, gamma, n_start_values_grid = 0, maxiter = 200):
     if n_start_values_grid > 0:
         # If requested, use multiple starting
         # values for more robust optimization results
-        start_vals_grid = np.linspace(0.01, 2.0, n_start_values_grid) * pd.Series(y).var()
+        start_vals_grid = np.linspace(
+            0.01, 2.0, n_start_values_grid) * pd.Series(y).var()
         opt_res = []
         for start_val_1 in start_vals_grid:
             for start_val_2 in start_vals_grid:
@@ -172,8 +174,8 @@ def estimate_R(y, gamma, n_start_values_grid = 0, maxiter = 200):
         # the likelihood, so find the minimum value
         opt_res = pd.DataFrame(opt_res)
         opt_res.sort_values(by='obj_value', ascending=True, inplace=True)
-        res_ll = mod_ll.fit(start_params = np.array([opt_res['start_val_1'][0], 
-                                                     opt_res['start_val_2'][0]]),
+        res_ll = mod_ll.fit(start_params=np.array([opt_res['start_val_1'][0],
+                                                   opt_res['start_val_2'][0]]),
                             maxiter=maxiter, disp=False)
     else:
         res_ll = mod_ll.fit(maxiter=maxiter, disp=False)
@@ -188,16 +190,17 @@ def estimate_R(y, gamma, n_start_values_grid = 0, maxiter = 200):
             'gamma': gamma}
 
 
-def compute_r(df, total_cases_var='total_cases', new_cases_var='new_cases',
-              time_var='date', location_var='location', days_infectious=7,
+def compute_r(df, total_cases_var, new_cases_var,
+              time_var, location_var, days_infectious=7,
               min_T=20, gamma=1 / 7.0, min_signal_to_noise=1e-3,
               max_signal_to_noise=1e2):
 
     # Impose minimum time-series observations
-    df_temp = df.groupby(location_var).count()['gr_infected_{}'.format(days_infectious)].reset_index()
-    df_temp.rename(columns = {'gr_infected_{}'.format(days_infectious): 'no_obs'},
-                   inplace = True)
-    df = pd.merge(df, df_temp, how = 'left')
+    df_temp = df.groupby(location_var).count()[
+        'gr_infected_{}'.format(days_infectious)].reset_index()
+    df_temp.rename(columns={'gr_infected_{}'.format(days_infectious): 'no_obs'},
+                   inplace=True)
+    df = pd.merge(df, df_temp, how='left')
     mask = df['no_obs'] >= min_T
     df = df.loc[mask, ]
 
@@ -211,41 +214,44 @@ def compute_r(df, total_cases_var='total_cases', new_cases_var='new_cases',
     df_optim_res = []
 
     with warnings.catch_warnings():
-      # Ignore warnings from statsmodels
-      # Instead, check later
-      warnings.filterwarnings("ignore", message = "Maximum Likelihood optimization failed to converge. Check mle_retvals")
-      for country in df[location_var].unique():
-          mask = df[location_var] == country
-          df_temp = df.loc[mask, ].copy()
-          y = df_temp['gr_infected_{}'.format(days_infectious)].values
-          res = estimate_R(y, gamma = gamma)
-          df.loc[mask, 'R'] = res['R']
-          df.loc[mask, 'se_R'] = res['se_R']
-          df_optim_res.append({location_var: country,
-                               'flag': res['flag'],
-                               'sigma2_irregular': res['sigma2_irregular'],
-                               'sigma2_level': res['sigma2_level'],
-                               'signal_to_noise': res['signal_to_noise']})
+        # Ignore warnings from statsmodels
+        # Instead, check later
+        warnings.filterwarnings(
+            "ignore", message="Maximum Likelihood optimization failed to converge. Check mle_retvals")
+        for country in df[location_var].unique():
+            mask = df[location_var] == country
+            df_temp = df.loc[mask, ].copy()
+            y = df_temp['gr_infected_{}'.format(days_infectious)].values
+            res = estimate_R(y, gamma=gamma)
+            df.loc[mask, 'R'] = res['R']
+            df.loc[mask, 'se_R'] = res['se_R']
+            df_optim_res.append({location_var: country,
+                                 'flag': res['flag'],
+                                 'sigma2_irregular': res['sigma2_irregular'],
+                                 'sigma2_level': res['sigma2_level'],
+                                 'signal_to_noise': res['signal_to_noise']})
     df_optim_res = pd.DataFrame(df_optim_res)
 
     # Merge in optimization results
-    df = pd.merge(df, df_optim_res, how = 'left')
+    df = pd.merge(df, df_optim_res, how='left')
 
     ###################################
     ## Filter out unreliable results ##
     ###################################
     # Unsuccessful optimization
-    mask = df['flag'] != 0
-    df = df.loc[~mask, ]
+    # Commented as it was cutting out a lot of data...we'll see if we reactivate this in the future
+    # mask = df['flag'] != 0
+    # df = df.loc[~mask, ]
     # Filter out implausible signal-to-noise ratios
-    mask = (df['signal_to_noise'] <= min_signal_to_noise) | (df['signal_to_noise'] >= max_signal_to_noise)
+    mask = (df['signal_to_noise'] <= min_signal_to_noise) | (
+        df['signal_to_noise'] >= max_signal_to_noise)
     df = df.loc[~mask, ]
 
     ####################
     ## Export results ##
     ####################
     df = df[[location_var, time_var, 'R', 'se_R']].copy()
-    df.reset_index(inplace = True)
+    df.reset_index(inplace=True)
     del df['index']
     df['days_infectious'] = 1 / gamma
 
@@ -261,15 +267,15 @@ def compute_r(df, total_cases_var='total_cases', new_cases_var='new_cases',
 
 
 def process_compute_rt(df, total_cases_var='total_cases', new_cases_var='new_cases',
-              time_var='date', location_var='location'):
+                       time_var='date', location_var='location'):
     '''Process all data to compute Rt'''
     growth_rate = prepare_data(df, total_cases_var=total_cases_var, new_cases_var=new_cases_var,
-              time_var=time_var, location_var=location_var)
+                               time_var=time_var, location_var=location_var)
     final = compute_r(growth_rate, total_cases_var=total_cases_var, new_cases_var=new_cases_var,
-              time_var=time_var, location_var=location_var)
+                      time_var=time_var, location_var=location_var)
 
     out = pd.merge(df, final,
-                   left_on=[time_var,location_var], 
-                   right_on=[time_var,location_var])
+                   left_on=[time_var, location_var],
+                   right_on=[time_var, location_var], how='outer')
 
     return out
