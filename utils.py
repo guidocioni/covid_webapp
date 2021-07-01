@@ -60,6 +60,14 @@ variable_options = [
     {'value': 'total_cases_change', 'label': 'Cases change'},
     {'value': 'total_deaths_change', 'label': 'Deceased change'},
     {'value': 'R', 'label': 'Reproductivity number Rt'},
+    {'value': 'people_vaccinated', 'label': 'People vaccinated'},
+    {'value': 'people_fully_vaccinated', 'label': 'People fully vaccinated'},
+    {'value': 'new_vaccinations', 'label': 'New vaccinations'},
+    {'value': 'new_vaccinations_smoothed',
+        'label': 'New vaccinations (smoothed)'},
+    {'value': 'people_vaccinated_per_hundred', 'label': 'People fully vaccinated'},
+    {'value': 'people_fully_vaccinated_per_hundred',
+        'label': 'People fully vaccinated (per hundred)'}
 ]
 
 # Used in the test tab
@@ -137,7 +145,19 @@ table_columns = [
     {'name': 'Hospital beds per thousand', 'id': 'hospital_beds_per_thousand',
      'hideable': True, 'type': 'numeric'},
     {'name': 'Rt', 'id': 'R',
-     'hideable': True, 'type': 'numeric'}
+     'hideable': True, 'type': 'numeric'},
+    {'id': 'people_vaccinated', 'name': 'People vaccinated',
+        'hideable': True, 'type': 'numeric'},
+    {'id': 'people_fully_vaccinated', 'name': 'People fully vaccinated',
+        'hideable': True, 'type': 'numeric'},
+    {'id': 'new_vaccinations', 'name': 'New vaccinations',
+        'hideable': True, 'type': 'numeric'},
+    {'id': 'new_vaccinations_smoothed',
+        'name': 'New vaccinations (smoothed)', 'hideable': True, 'type': 'numeric'},
+    {'id': 'people_vaccinated_per_hundred', 'name': 'People fully vaccinated',
+        'hideable': True, 'type': 'numeric'},
+    {'id': 'people_fully_vaccinated_per_hundred',
+        'name': 'People fully vaccinated (per hundred)', 'hideable': True, 'type': 'numeric'}
 ]
 
 
@@ -179,7 +199,6 @@ variable_options_eu = [
     {'value': 'R', 'label': 'Reproductivity number Rt'},
     {'value': 'IntensiveCare', 'label': 'Intensive Care patients'},
     {'value': 'Hospitalized', 'label': 'Hospitalisations'}
-
 ]
 
 
@@ -663,7 +682,9 @@ def make_dash_table(table_data, id):
                                      'total_tests', 'new_tests', 'icu_patients', 'icu_patients_per_million',
                                      'hosp_patients', 'hosp_patients_per_million', 'weekly_icu_admissions',
                                      'weekly_icu_admissions_per_million', 'weekly_hosp_admissions', 'weekly_hosp_admissions_per_million',
-                                     'hospital_beds_per_thousand', 'new_deaths_per_million', 'new_cases_per_million'
+                                     'hospital_beds_per_thousand', 'new_deaths_per_million', 'new_cases_per_million',
+                                     'people_vaccinated', 'people_fully_vaccinated', 'new_vaccinations',
+                                     'new_vaccinations_smoothed', 'people_vaccinated_per_hundred', 'R'
                                      ],
                      page_size=500,
                      virtualization=True,
