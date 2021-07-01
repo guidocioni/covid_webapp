@@ -10,7 +10,7 @@ MAIN_FOLDER = os.path.dirname(os.path.realpath(__file__))
 ''' In this script we perform the preprocessing of data shown in the dashboard in the background
 so that the user doesn't have to wait for computatin when opening the dashboard.
 The results are saved in pickle files which are then loded with the same name in the application.
-You can run this script every 2 hours, but even less, with cron 
+You can run this script every 2 hours, but even less, with cron
 0 */2 * * * /usr/bin/python3 /home/covid_webapp/data_processing.py'''
 
 
@@ -28,9 +28,11 @@ def read_owid():
         "new_deaths_smoothed_per_million"].transform(lambda x: x.diff().rolling(3).mean())
     df['positive_rate'] = df['positive_rate'] * 100.
 
-    df = process_compute_rt(df.reset_index(),
-                            total_cases_var='total_cases', new_cases_var='new_cases',
-                            time_var='date', location_var='location')
+    # df = process_compute_rt(df.reset_index(),
+    #                         total_cases_var='total_cases', new_cases_var='new_cases',
+    #                         time_var='date', location_var='location')
+
+    df = df.rename(columns={'reproduction_rate': 'R'}).reset_index()
 
     df = df.replace([np.inf, -np.inf], np.nan)
 
@@ -53,12 +55,19 @@ def read_jrc():
     df.loc[(df.iso3 == 'FRA') & (df.index > '2020-03-25'),
            'CumulativePositive'] = np.nan
 
-    df['daily_cases'] = df.groupby(
-        "Region")['CumulativePositive'].transform(lambda x: x.diff())
-    df['daily_deaths'] = df.groupby(
-        "Region")['CumulativeDeceased'].transform(lambda x: x.diff())
-    df['daily_recovered'] = df.groupby(
-        "Region")['CumulativeRecovered'].transform(lambda x: x.diff())
+    out = []
+    for grouper, group in df.groupby("Region"):
+        temp = group[['CumulativePositive', 'CumulativeDeceased',
+                      'CumulativeRecovered']].transform(lambda x: x.diff()).reset_index()
+        temp = temp.rename(columns={'CumulativePositive': 'daily_cases',
+                           'CumulativeDeceased': 'daily_deaths', 'CumulativeRecovered': 'daily_recovered'})
+        temp['Region'] = grouper
+        out.append(temp)
+
+    out = pd.concat(out)
+
+    df = df.reset_index().merge(out, on=['Date', 'Region']).set_index('Date')
+
     df['daily_cases_smoothed'] = df.groupby(
         "Region")['daily_cases'].transform(lambda x: x.rolling(7).mean())
     df['daily_deaths_smoothed'] = df.groupby(

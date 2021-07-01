@@ -12,7 +12,7 @@ def get_aggregated_tab(dropdown_options):
             dcc.Dropdown(
                 id='variable-dropdown',
                 options=variable_options,
-                value="total_cases_change",
+                value="new_cases_smoothed_per_million",
                 style={'width': '780px', 'margin': '10px'}),
             dcc.Graph(
                 id='figure-map-world',
@@ -39,7 +39,7 @@ def get_aggregated_tab(dropdown_options):
                           id='date-picker-single',
                           min_date_allowed='2019-12-31',
                           max_date_allowed=date.today().strftime('%Y-%m-%d'),
-                          date='2020-07-01',
+                          date='2021-01-01',
                           display_format='DD MMM YYYY',
                           placeholder='Starting date',
                           style={'margin-right': '5px', 'width': '50px', 'display': 'inline-block'}),
@@ -73,7 +73,7 @@ def get_aggregated_eu_tab(region_options):
             dcc.Dropdown(
                 id='variable-dropdown-eu',
                 options=variable_options_eu,
-                value="total_cases_change",
+                value="daily_cases_smoothed_per_million",
                 style={'width': '780px', 'margin': '10px'}),
             dcc.Graph(
                 id='figure-map-eu',
@@ -100,7 +100,7 @@ def get_aggregated_eu_tab(region_options):
                           id='date-picker-single-2',
                           min_date_allowed='2019-12-31',
                           max_date_allowed=date.today().strftime('%Y-%m-%d'),
-                          date='2020-07-01',
+                          date='2021-01-01',
                           display_format='DD MMM YYYY',
                           placeholder='Starting date',
                           style={'margin-right': '5px', 'width': '50px', 'display': 'inline-block'}), ],
